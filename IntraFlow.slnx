@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="IntraFlow.Application/IntraFlow.Application.csproj" />
+  <Project Path="IntraFlow.Domain/IntraFlow.Domain.csproj" />
+  <Project Path="IntraFlow.Infrastructure/IntraFlow.Infrastructure.csproj" />
+  <Project Path="IntraFlow.Tests/IntraFlow.Tests.csproj" />
+  <Project Path="IntraFlow.Web/IntraFlow.Web.csproj" />
+</Solution>
