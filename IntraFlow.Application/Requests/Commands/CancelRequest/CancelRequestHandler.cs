@@ -1,4 +1,5 @@
 ﻿using IntraFlow.Application.Abstractions;
+using IntraFlow.Application.Common;
 using IntraFlow.Domain.Audit;
 using IntraFlow.Domain.Requests;
 using Microsoft.EntityFrameworkCore;
@@ -25,17 +26,19 @@ public sealed class CancelRequestHandler
             .FirstOrDefaultAsync(x => x.Id == cmd.RequestId, ct)
             ?? throw new InvalidOperationException("Request not found.");
 
+        var oldStatus = request.Status.ToString();
 
         request.Cancel(_currentUser.UserId);
 
-        _db.AuditLogs.Add(new AuditLog(
-            "Request",
-            request.Id.ToString(),  
-            "Cancelled",
-            _currentUser.UserId,
-            null,
-            "{ \"Status\": \"Cancelled\" }",
-            null));
+        var newStatus = request.Status.ToString();
+
+        _db.AuditLogs.Add(AuditHelper.Create(
+            entityType: "Request",
+            entityId: request.Id.ToString(),
+            actionType: "Cancelled",
+            performedByUserId: _currentUser.UserId,
+            oldValues: new { Status = oldStatus },
+            newValues: new { Status = newStatus }));
 
         await _db.SaveChangesAsync(ct);
     }

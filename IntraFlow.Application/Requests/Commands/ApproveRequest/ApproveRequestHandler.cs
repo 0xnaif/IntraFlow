@@ -1,4 +1,5 @@
 ﻿using IntraFlow.Application.Abstractions;
+using IntraFlow.Application.Common;
 using IntraFlow.Domain.Audit;
 using IntraFlow.Domain.Notifications;
 using IntraFlow.Domain.Requests;
@@ -33,18 +34,22 @@ public sealed class ApproveRequestHandler
 
         var decision = RequestDecision.Approve(request.Id, _currentUser.UserId);
 
+        var oldStatus = request.Status.ToString();
+
         request.Approve(_currentUser.UserId, decision.DecidedAt);
+
+        var newStatus = request.Status.ToString();
 
         _db.RequestDecisions.Add(decision);
 
-        _db.AuditLogs.Add(new AuditLog(
+
+        _db.AuditLogs.Add(AuditHelper.Create(
             entityType: "Request",
             entityId: request.Id.ToString(),
             actionType: "Approved",
             performedByUserId: _currentUser.UserId,
-            oldValuesJson: "{ \"Status\": \"InReview\" }",
-            newValuesJson: "{ \"Status\": \"Approved\" }",
-            notes: null));
+            oldValues: new { Status = oldStatus },
+            newValues: new { Status = newStatus }));
 
         var subject = $"Request #{request.Id} approved";
         var body = $"Request '{request.Title}' has been approved.";

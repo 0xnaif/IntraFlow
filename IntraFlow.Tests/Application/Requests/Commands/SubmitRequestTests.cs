@@ -39,9 +39,19 @@ public class SubmitRequestTests
         
         await submitHandler.Handle(new SubmitRequestCommand(requestId));
 
-        
+        var audit = await db.AuditLogs.FirstOrDefaultAsync(x =>
+            x.EntityType == "Request" &&
+            x.EntityId == requestId.ToString() &&
+            x.ActionType == "Submitted");
+
+
         var log = await db.NotificationLogs
             .FirstOrDefaultAsync(x => x.RequestId == requestId && x.EventType == "RequestSubmitted");
+
+        audit.Should().NotBeNull();
+        audit!.OldValuesJson.Should().Contain("Draft");
+        audit.NewValuesJson.Should().Contain("Submitted");
+
 
         log.Should().NotBeNull();
         log!.Status.Should().Be("Sent"); // or "Failed" depending on your implementation

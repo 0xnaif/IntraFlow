@@ -1,4 +1,5 @@
 ﻿using IntraFlow.Application.Abstractions;
+using IntraFlow.Application.Common;
 using IntraFlow.Domain.Requests;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,16 +33,20 @@ public sealed class CreateRequestHandler
 
         _db.Requests.Add(request);
 
-        _db.AuditLogs.Add(new(
+        var newStatus = request.Status.ToString();
+
+        await _db.SaveChangesAsync(ct);
+
+        _db.AuditLogs.Add(AuditHelper.Create(
             entityType: "Request",
             entityId: request.Id.ToString(),
             actionType: "Created",
             performedByUserId: _currentUser.UserId,
-            oldValuesJson: null,
-            newValuesJson: null,
-            notes: null));
+            oldValues: null,
+            newValues: new { Status = newStatus }));
 
         await _db.SaveChangesAsync(ct);
+
         return request.Id;
     }
 }

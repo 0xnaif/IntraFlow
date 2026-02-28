@@ -1,6 +1,9 @@
 ﻿using IntraFlow.Application.Abstractions;
+using IntraFlow.Application.Common;
+using IntraFlow.Domain.Audit;
 using IntraFlow.Domain.Notifications;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace IntraFlow.Application.Requests.Commands.SubmitRequest;
 
@@ -25,7 +28,21 @@ public sealed class SubmitRequestHandler
         if (request.CreatedByUserId != _currentUser.UserId)
             throw new UnauthorizedAccessException("Only the creator can submit the request.");
 
+        var oldStatus = request.Status.ToString();
+
         request.Submit();
+
+        var newStatus = request.Status.ToString();
+
+        
+        _db.AuditLogs.Add(AuditHelper.Create(
+            entityType: "Request",
+            entityId: request.Id.ToString(),
+            actionType: "Submitted",
+            performedByUserId: _currentUser.UserId,
+            oldValues: new { Status = oldStatus },
+            newValues: new { Status = newStatus }));
+
 
         var subject = $"Request #{request.Id} submitted";
         var body = $"Request '{request.Title}' has been submitted.";

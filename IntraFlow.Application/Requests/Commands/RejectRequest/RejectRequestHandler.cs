@@ -1,4 +1,5 @@
 ﻿using IntraFlow.Application.Abstractions;
+using IntraFlow.Application.Common;
 using IntraFlow.Domain.Audit;
 using IntraFlow.Domain.Notifications;
 using IntraFlow.Domain.Requests;
@@ -39,18 +40,21 @@ public sealed class RejectRequestHandler
             cmd.Reason,
             _currentUser.UserId);
 
+        var oldStatus = request.Status.ToString();
+
         request.Reject(_currentUser.UserId, decision.DecidedAt);
+
+        var newStatus = request.Status.ToString();
 
         _db.RequestDecisions.Add(decision);
 
-        _db.AuditLogs.Add(new AuditLog(
-            "Request",
-            request.Id.ToString(),
-            "Rejected",
-            _currentUser.UserId,
-            "{ \"Status\": \"InReview\" }",
-            "{ \"Status\": \"Rejected\" }",
-            cmd.Reason));
+        _db.AuditLogs.Add(AuditHelper.Create(
+            entityType: "Request",
+            entityId: request.Id.ToString(),
+            actionType: "Rejected",
+            performedByUserId: _currentUser.UserId,
+            oldValues: new { Status = oldStatus },
+            newValues: new { Status = newStatus }));
 
         var subject = $"Request #{request.Id} rejected";
         var body = $"Request '{request.Title}' has been rejected.";
