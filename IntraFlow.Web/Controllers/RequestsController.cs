@@ -1,0 +1,81 @@
+﻿using IntraFlow.Application.Abstractions;
+using IntraFlow.Application.Requests.Commands.CreateRequest;
+using IntraFlow.Web.Models.Requests;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace IntraFlow.Web.Controllers;
+
+[Authorize]
+public sealed class RequestsController : Controller
+{
+    private readonly IAppDbContext _db;
+    private readonly ICurrentUserService _currentUser;
+
+    public RequestsController(
+        IAppDbContext db,
+        ICurrentUserService currentUser)
+    {
+        _db = db;
+        _currentUser = currentUser;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Create()
+    {
+        var vm = new CreateRequestViewModel
+        {
+            RequestTypes = await _db.RequestTypes
+                .Select(x => new RequestTypeOption
+                {
+                    Id = x.Id,
+                    Name = x.Name
+                })
+                .ToListAsync()
+        };
+
+        return View(vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(CreateRequestViewModel vm)
+    {
+        if (!ModelState.IsValid)
+        {
+            vm.RequestTypes = await _db.RequestTypes
+                .Select(x => new RequestTypeOption
+                {
+                    Id = x.Id,
+                    Name = x.Name
+                })
+                .ToListAsync();
+
+            return View(vm);
+        }
+
+        var handler = new CreateRequestHandler(_db, _currentUser);
+
+        var requestId = await handler.Handle(new CreateRequestCommand(
+            Title: vm.Title,
+            Description: vm.Description,
+            Priority: vm.Priority,
+            RequestTypeId: vm.RequestTypeId
+        ));
+
+        return RedirectToAction(nameof(Details), new { id = requestId });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Details(int id)
+    {
+        var request = await _db.Requests
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (request is null)
+            return NotFound();
+
+        return View(request);
+    }
+}

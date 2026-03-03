@@ -1,0 +1,43 @@
+﻿@model IntraFlow.Web.Models.Requests.CreateRequestViewModel
+
+@{
+    ViewData["Title"] = "Create Request";
+}
+
+<h2>Create Request</h2>
+
+<form asp-action="Create" method="post">
+    <div class="mb-3">
+        <label asp-for="Title" class="form-label"></label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" class="form-control"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Priority" class="form-label"></label>
+        <select asp-for="Priority"
+                asp-items="Html.GetEnumSelectList<IntraFlow.Domain.Requests.RequestPriority>()"
+                class="form-select"></select>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="RequestTypeId" class="form-label"></label>
+        <select asp-for="RequestTypeId"
+                class="form-select"
+                asp-items="@(new SelectList(Model.RequestTypes, "Id", "Name"))">
+        </select>
+        <span asp-validation-for="RequestTypeId" class="text-danger"></span>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create</button>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,8 +1,10 @@
+using IntraFlow.Application.Abstractions;
 using IntraFlow.Application.DependencyInjection;
 using IntraFlow.Infrastructure.DependencyInjection;
 using IntraFlow.Infrastructure.Identity;
 using IntraFlow.Infrastructure.Persistence;
 using IntraFlow.Web.Seed;
+using IntraFlow.Web.Services;
 using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -13,6 +15,8 @@ builder.Services.AddRazorPages();
 
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
