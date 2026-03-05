@@ -1,4 +1,4 @@
-﻿namespace IntraFlow.Application.Requests.Queries.GetComments;
+﻿namespace IntraFlow.Application.Requests.DTOs;
 
 public sealed record RequestCommentDto(
     int Id,

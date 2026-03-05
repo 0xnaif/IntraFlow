@@ -1,4 +1,5 @@
 ﻿using IntraFlow.Application.Abstractions;
+using IntraFlow.Application.Requests.DTOs;
 using Microsoft.EntityFrameworkCore;
 
 namespace IntraFlow.Application.Requests.Queries.GetComments;

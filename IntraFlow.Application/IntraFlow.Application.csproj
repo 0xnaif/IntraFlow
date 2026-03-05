@@ -16,8 +16,4 @@
     <ProjectReference Include="..\IntraFlow.Domain\IntraFlow.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Requests\DTOs\" />
-  </ItemGroup>
-
 </Project>

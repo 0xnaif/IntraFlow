@@ -1,5 +1,6 @@
 ﻿using IntraFlow.Application.Abstractions;
 using IntraFlow.Application.Requests.Commands.CreateRequest;
+using IntraFlow.Application.Requests.Queries.MyRequests;
 using IntraFlow.Web.Models.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +20,16 @@ public sealed class RequestsController : Controller
     {
         _db = db;
         _currentUser = currentUser;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Index()
+    {
+        var handler = new GetMyRequestsHandler(_db, _currentUser);
+
+        var requests = await handler.Handle();
+
+        return View(requests);
     }
 
     [HttpGet]

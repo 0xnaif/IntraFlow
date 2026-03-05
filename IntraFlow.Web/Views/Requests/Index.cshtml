@@ -1,0 +1,49 @@
+﻿@model List<IntraFlow.Application.Requests.DTOs.MyRequestListItemDto>
+
+@{
+    ViewData["Title"] = "My Requests";
+}
+
+<h2>My Requests</h2>
+
+<a class="btn btn-primary mb-3"
+   asp-controller="Requests"
+   asp-action="Create">
+    Create Request
+</a>
+
+<table class="table table-striped">
+
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Created</th>
+            <th></th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+        @foreach (var request in Model)
+        {
+            <tr>
+                <td>@request.Title</td>
+                <td>@request.Status</td>
+                <td>@request.Priority</td>
+                <td>@request.CreatedAt.ToShortDateString()</td>
+
+                <td>
+                    <a asp-controller="Requests"
+                       asp-action="Details"
+                       asp-route-id="@request.Id">
+                        View
+                    </a>
+                </td>
+            </tr>
+        }
+
+    </tbody>
+
+</table>
