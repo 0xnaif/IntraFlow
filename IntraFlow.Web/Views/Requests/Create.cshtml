@@ -27,7 +27,7 @@
     </div>
 
     <div class="mb-3">
-        <label asp-for="RequestTypeId" class="form-label"></label>
+        <label asp-for="RequestTypeId" class="form-label">Request Type</label>
         <select asp-for="RequestTypeId"
                 class="form-select"
                 asp-items="@(new SelectList(Model.RequestTypes, "Id", "Name"))">
