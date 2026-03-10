@@ -1,0 +1,71 @@
+﻿@model IntraFlow.Application.Requests.DTOs.RequestDetailsDto
+@using IntraFlow.Domain.Requests
+
+@{
+    ViewData["Title"] = "Request Details";
+}
+
+<h2>Request Details</h2>
+
+<hr />
+
+<div class="card mb-4">
+
+    <div class="card-body">
+
+        <h4>@Model.Title</h4>
+
+        <p class="text-muted">
+            Created @Model.CreatedAt.ToShortDateString()
+        </p>
+
+        <p>
+            <strong>Description</strong><br />
+            @Model.Description
+        </p>
+
+        <p>
+            <strong>Priority:</strong> @Model.Priority
+        </p>
+
+        <p>
+            <strong>Status:</strong>
+            <span class="badge bg-secondary">
+                @Model.Status
+            </span>
+        </p>
+
+    </div>
+
+</div>
+
+<h4>Actions</h4>
+
+@if (Model.Status == RequestStatus.Draft)
+{
+    <form asp-action="Submit" method="post" class="d-inline">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <button class="btn btn-success">Submit Request</button>
+    </form>
+
+    <form asp-action="Cancel" method="post" class="d-inline">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <button class="btn btn-danger">Cancel</button>
+    </form>
+}
+
+<hr />
+
+<h4>Attachments</h4>
+
+<p class="text-muted">
+    No attachments yet.
+</p>
+
+<hr />
+
+<h4>Comments</h4>
+
+<p class="text-muted">
+    No comments yet.
+</p>

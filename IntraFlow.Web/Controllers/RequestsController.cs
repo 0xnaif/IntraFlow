@@ -1,5 +1,6 @@
 ﻿using IntraFlow.Application.Abstractions;
 using IntraFlow.Application.Requests.Commands.CreateRequest;
+using IntraFlow.Application.Requests.Queries.GetRequestDetails;
 using IntraFlow.Application.Requests.Queries.MyRequests;
 using IntraFlow.Web.Models.Requests;
 using Microsoft.AspNetCore.Authorization;
@@ -81,8 +82,9 @@ public sealed class RequestsController : Controller
     [HttpGet]
     public async Task<IActionResult> Details(int id)
     {
-        var request = await _db.Requests
-            .FirstOrDefaultAsync(x => x.Id == id);
+        var handler = new GetRequestDetailsHandler(_db);
+
+        var request = await handler.Handle(new GetRequestDetailsQuery(id));
 
         if (request is null)
             return NotFound();
