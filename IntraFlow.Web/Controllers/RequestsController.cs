@@ -1,5 +1,6 @@
 ﻿using IntraFlow.Application.Abstractions;
 using IntraFlow.Application.Requests.Commands.CreateRequest;
+using IntraFlow.Application.Requests.Commands.SubmitRequest;
 using IntraFlow.Application.Requests.Queries.GetRequestDetails;
 using IntraFlow.Application.Requests.Queries.MyRequests;
 using IntraFlow.Web.Models.Requests;
@@ -14,13 +15,16 @@ public sealed class RequestsController : Controller
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IEmailSender _emailSender;
 
     public RequestsController(
         IAppDbContext db,
-        ICurrentUserService currentUser)
+        ICurrentUserService currentUser,
+        IEmailSender emailSender)
     {
         _db = db;
         _currentUser = currentUser;
+        _emailSender = emailSender;
     }
 
     [HttpGet]
@@ -75,6 +79,12 @@ public sealed class RequestsController : Controller
             Priority: vm.Priority,
             RequestTypeId: vm.RequestTypeId
         ));
+
+        if (vm.SubmitAction == "Submit")
+        {
+            var submitHandler = new SubmitRequestHandler(_db, _currentUser, _emailSender);
+            await submitHandler.Handle(new SubmitRequestCommand(requestId));
+        }
 
         return RedirectToAction(nameof(Details), new { id = requestId });
     }

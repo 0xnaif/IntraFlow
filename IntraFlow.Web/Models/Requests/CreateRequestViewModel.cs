@@ -20,6 +20,9 @@ public sealed class CreateRequestViewModel
     public int RequestTypeId { get; set; }
 
     public List<RequestTypeOption> RequestTypes { get; set; } = new();
+
+    [Required]
+    public string SubmitAction { get; set; } = "Draft";
 }
 
 public sealed class RequestTypeOption
