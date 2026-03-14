@@ -1,0 +1,43 @@
+﻿@model List<IntraFlow.Application.Requests.DTOs.ApproverRequestListItemDto>
+
+@{
+    ViewData["Title"] = "Requests Awaiting Review";
+}
+
+<h2>Requests Awaiting Review</h2>
+
+<table class="table table-striped">
+
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Priority</th>
+            <th>Created</th>
+            <th>Requester</th>
+            <th></th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+        @foreach (var request in Model)
+        {
+            <tr>
+                <td>@request.Title</td>
+                <td>@request.Priority</td>
+                <td>@request.CreatedAt.ToShortDateString()</td>
+                <td>@request.CreatedByUserId</td>
+
+                <td>
+                    <a asp-controller="Requests"
+                       asp-action="Details"
+                       asp-route-id="@request.Id">
+                        Open
+                    </a>
+                </td>
+            </tr>
+        }
+
+    </tbody>
+
+</table>

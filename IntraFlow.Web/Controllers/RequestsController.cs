@@ -1,6 +1,7 @@
 ﻿using IntraFlow.Application.Abstractions;
 using IntraFlow.Application.Requests.Commands.CreateRequest;
 using IntraFlow.Application.Requests.Commands.SubmitRequest;
+using IntraFlow.Application.Requests.Queries.ApproverRequests;
 using IntraFlow.Application.Requests.Queries.GetRequestDetails;
 using IntraFlow.Application.Requests.Queries.MyRequests;
 using IntraFlow.Web.Models.Requests;
@@ -100,5 +101,16 @@ public sealed class RequestsController : Controller
             return NotFound();
 
         return View(request);
+    }
+
+    [Authorize(Policy = "CanApprove")]
+    [HttpGet]
+    public async Task<IActionResult> Pending()
+    {
+        var handler = new GetRequestsForApproverHandler(_db, _currentUser);
+
+        var requests = await handler.Handle();
+
+        return View(requests);
     }
 }
