@@ -35,6 +35,16 @@
                         Create Request
                     </a>
                 </li>
+                @if (!User.IsInRole("Employee"))
+                { 
+                <li class="nav-item">
+                    <a class="nav-link @(currentController == "Requests" && currentAction == "Pending" ? "active" : "")"
+                       asp-controller="Requests"
+                       asp-action="Pending">
+                        Pending Reviews
+                    </a>
+                </li>
+                }
 
             </ul>
 

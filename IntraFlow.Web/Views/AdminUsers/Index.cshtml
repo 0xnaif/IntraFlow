@@ -1,0 +1,35 @@
+﻿@using IntraFlow.Infrastructure.Identity
+@model List<IntraFlow.Web.Models.Admin.UserListItemViewModel>
+
+<h2>Users</h2>
+
+<a asp-action="Create" class="btn btn-primary mb-3">
+    Create User
+</a>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <td>Name</td>
+            <td>Email</td>
+            <td>Role</td>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var user in Model)
+    {
+        
+            <tr>
+                <td>@user.FullName</td>
+                <td>@user.Email</td>
+                <td>
+                    <span class="badge bg-secondary">
+                        @user.Role
+                    </span>
+                </td>
+            </tr>
+        
+    }
+    </tbody>
+</table>
+

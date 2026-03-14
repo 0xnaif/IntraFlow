@@ -1,0 +1,26 @@
+﻿@model IntraFlow.Web.Models.Admin.CreateUserViewModel
+<h2>Create User</h2>
+
+<form method="post">
+    <div class="mb-3">
+        <label>Name</label>
+        <input asp-for="Name" class="form-control"/>
+    </div>
+    <div class="mb-3">
+        <label>Email</label>
+        <input asp-for="Email" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label>Role</label>
+        <select asp-for="Role" class="form-control">
+            @foreach (var role in Model.Roles)
+                    {
+                        <option value="@role">@role</option>
+                    }
+        </select>
+    </div>
+
+    <button class="btn btn-success">
+        Create
+    </button>
+</form>
