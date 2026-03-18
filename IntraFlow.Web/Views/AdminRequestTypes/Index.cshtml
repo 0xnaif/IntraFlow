@@ -1,0 +1,42 @@
+﻿@model List<IntraFlow.Application.RequestTypes.DTOs.RequestTypeListItemDto>
+
+@{
+    ViewData["Title"] = "Request Types";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Request Types</h2>
+
+    <a asp-action="Create" class="btn btn-primary">
+        Create Request Type
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        No request types have been created yet.
+    </div>
+}
+else
+{
+    <table class="table table-striped table-bordered">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Default Approver Id</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var type in Model)
+            {
+                <tr>
+                    <td>@type.Name</td>
+                    <td>@type.Description</td>
+                    <td>@type.DefaultApproverUserId</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
