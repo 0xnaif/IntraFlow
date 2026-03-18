@@ -24,7 +24,7 @@ public sealed class GetRequestsForApproverHandler
             .Where(x =>
                 x.Status == RequestStatus.Submitted &&
                 x.AssignedApproverUserId == _currentUser.UserId)
-            .OrderBy(x => x.CreatedAt)
+            .OrderByDescending(x => x.CreatedAt)
             .Select(x => new ApproverRequestListItemDto(
                 x.Id,
                 x.Title,
