@@ -33,11 +33,12 @@ public class Request : AuditableEntity
         LastUpdatedAt = CreatedAt;
     }
 
-    public void Submit()
+    public void Submit(string? approverUserId = null)
     {
         if (Status != RequestStatus.Draft)
             throw new InvalidOperationException("Only draft requests can be submitted.");
 
+        AssignedApproverUserId = approverUserId;
         Status = RequestStatus.Submitted;
         SubmittedAt = DateTime.UtcNow;
         Touch();
@@ -48,7 +49,7 @@ public class Request : AuditableEntity
         if (Status != RequestStatus.Submitted)
             throw new InvalidOperationException("Request must be submitted first.");
 
-        AssignedApproverUserId = approverUserId;
+        AssignedApproverUserId = approverUserId; // should be removed since it's done in Submit
         Status = RequestStatus.InReview;
         InReviewAt = DateTime.UtcNow;
         Touch();

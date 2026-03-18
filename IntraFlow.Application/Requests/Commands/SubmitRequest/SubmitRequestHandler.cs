@@ -25,12 +25,15 @@ public sealed class SubmitRequestHandler
         var request = await _db.Requests.FirstOrDefaultAsync(x => x.Id == cmd.RequestId, ct)
             ?? throw new InvalidOperationException("Request not found.");
 
+        var requestType = await _db.RequestTypes.FirstOrDefaultAsync(x => x.Id == request.RequestTypeId, ct)
+            ?? throw new InvalidOperationException("Request Type not found.");
+
         if (request.CreatedByUserId != _currentUser.UserId)
             throw new UnauthorizedAccessException("Only the creator can submit the request.");
 
         var oldStatus = request.Status.ToString();
 
-        request.Submit();
+        request.Submit(requestType.DefaultApproverUserId);
 
         var newStatus = request.Status.ToString();
 
