@@ -16,11 +16,11 @@ public sealed class StartReviewHandler
 
     public async Task Handle(StartReviewCommand cmd, CancellationToken ct = default)
     {
-        if (!_currentUser.IsInRole("Approver") && !_currentUser.IsInRole("Admin"))
-            throw new UnauthorizedAccessException("Only approvers/admins can start review.");
-
         var request = await _db.Requests.FirstOrDefaultAsync(x => x.Id == cmd.RequestId, ct)
             ?? throw new InvalidOperationException("Request not found.");
+
+        if (request.AssignedApproverUserId != _currentUser.UserId)
+            throw new UnauthorizedAccessException("Only assigned approver can start review.");
 
         if (request.AssignedApproverUserId is null)
         {
