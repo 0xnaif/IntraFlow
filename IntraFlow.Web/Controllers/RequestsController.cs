@@ -1,5 +1,7 @@
 ﻿using IntraFlow.Application.Abstractions;
+using IntraFlow.Application.Requests.Commands.CancelRequest;
 using IntraFlow.Application.Requests.Commands.CreateRequest;
+using IntraFlow.Application.Requests.Commands.StartReview;
 using IntraFlow.Application.Requests.Commands.SubmitRequest;
 using IntraFlow.Application.Requests.Queries.ApproverRequests;
 using IntraFlow.Application.Requests.Queries.GetRequestDetails;
@@ -88,6 +90,39 @@ public sealed class RequestsController : Controller
         }
 
         return RedirectToAction(nameof(Details), new { id = requestId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize]
+    public async Task<IActionResult> Submit(int id)
+    {
+        var handler = new SubmitRequestHandler(_db, _currentUser, _emailSender);
+        await handler.Handle(new SubmitRequestCommand(id));
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize]
+    public async Task<IActionResult> Cancel(int id)
+    {
+        var handler = new CancelRequestHandler(_db, _currentUser);
+        await handler.Handle(new CancelRequestCommand(id));
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Policy = "CanApprove")]
+    public async Task<IActionResult> StartReview(int id)
+    {
+        var handler = new StartReviewHandler(_db, _currentUser);
+        await handler.Handle(new StartReviewCommand(id));
+
+        return RedirectToAction(nameof(Details), new { id });
     }
 
     [HttpGet]

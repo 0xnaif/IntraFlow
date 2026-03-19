@@ -1,5 +1,6 @@
 ﻿@model IntraFlow.Application.Requests.DTOs.RequestDetailsDto
 @using IntraFlow.Domain.Requests
+@using System.Security.Claims
 
 @{
     ViewData["Title"] = "Request Details";
@@ -51,6 +52,15 @@
     <form asp-action="Cancel" method="post" class="d-inline">
         <input type="hidden" name="id" value="@Model.Id" />
         <button class="btn btn-danger">Cancel</button>
+    </form>
+}
+
+@if (Model.Status == RequestStatus.Submitted
+    && Model.AssignedApproverUserId == User.FindFirstValue(ClaimTypes.NameIdentifier))
+{
+    <form asp-action="StartReview" method="post" class="d-inline">
+        <input type="hidden" name="id" value="@Model.Id" />
+        <button class="btn btn-primary">Start Review</button>
     </form>
 }
 
