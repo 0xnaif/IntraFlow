@@ -22,12 +22,14 @@ public sealed class GetRequestsForApproverHandler
     {
         return await _db.Requests
             .Where(x =>
-                x.Status == RequestStatus.Submitted &&
+                (x.Status == RequestStatus.Submitted ||
+                x.Status == RequestStatus.InReview) &&
                 x.AssignedApproverUserId == _currentUser.UserId)
             .OrderByDescending(x => x.CreatedAt)
             .Select(x => new ApproverRequestListItemDto(
                 x.Id,
                 x.Title,
+                x.Status,
                 x.Priority,
                 x.CreatedAt,
                 x.CreatedByUserId))
