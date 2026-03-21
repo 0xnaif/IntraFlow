@@ -2,6 +2,7 @@
 using IntraFlow.Application.Requests.Commands.ApproveRequest;
 using IntraFlow.Application.Requests.Commands.CancelRequest;
 using IntraFlow.Application.Requests.Commands.CreateRequest;
+using IntraFlow.Application.Requests.Commands.RejectRequest;
 using IntraFlow.Application.Requests.Commands.StartReview;
 using IntraFlow.Application.Requests.Commands.SubmitRequest;
 using IntraFlow.Application.Requests.Queries.ApproverRequests;
@@ -90,60 +91,79 @@ public sealed class RequestsController : Controller
             await submitHandler.Handle(new SubmitRequestCommand(requestId));
         }
 
-        return RedirectToAction(nameof(Details), new { id = requestId });
+        return RedirectToAction(nameof(Details), new { requestId });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize]
-    public async Task<IActionResult> Submit(int id)
+    public async Task<IActionResult> Submit(int requestId)
     {
         var handler = new SubmitRequestHandler(_db, _currentUser, _emailSender);
-        await handler.Handle(new SubmitRequestCommand(id));
+        await handler.Handle(new SubmitRequestCommand(requestId));
 
-        return RedirectToAction(nameof(Details), new { id });
+        return RedirectToAction(nameof(Details), new { requestId });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize]
-    public async Task<IActionResult> Cancel(int id)
+    public async Task<IActionResult> Cancel(int requestId)
     {
         var handler = new CancelRequestHandler(_db, _currentUser);
-        await handler.Handle(new CancelRequestCommand(id));
+        await handler.Handle(new CancelRequestCommand(requestId));
 
-        return RedirectToAction(nameof(Details), new { id });
+        return RedirectToAction(nameof(Details), new { requestId });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = "CanApprove")]
-    public async Task<IActionResult> StartReview(int id)
+    public async Task<IActionResult> StartReview(int requestId)
     {
         var handler = new StartReviewHandler(_db, _currentUser);
-        await handler.Handle(new StartReviewCommand(id));
+        await handler.Handle(new StartReviewCommand(requestId));
 
-        return RedirectToAction(nameof(Details), new { id });
+        return RedirectToAction(nameof(Details), new { requestId });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = "CanApprove")]
-    public async Task<IActionResult> Approve(int id)
+    public async Task<IActionResult> Approve(int requestId)
     {
         var handler = new ApproveRequestHandler(_db, _currentUser, _emailSender);
 
-        await handler.Handle(new ApproveRequestCommand(id));
+        await handler.Handle(new ApproveRequestCommand(requestId));
 
-        return RedirectToAction(nameof(Details), new { id });
+        return RedirectToAction(nameof(Details), new { requestId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Policy = "CanApprove")]
+    public async Task<IActionResult> Reject(int requestId, string reason)
+    {
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            ModelState.AddModelError("reason", "Rejection reason is required.");
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+
+        reason = reason.Trim();
+
+        var handler = new RejectRequestHandler(_db, _currentUser, _emailSender);
+        await handler.Handle(new RejectRequestCommand(requestId, reason));
+
+        return RedirectToAction(nameof(Details), new { requestId });
     }
 
     [HttpGet]
-    public async Task<IActionResult> Details(int id)
+    public async Task<IActionResult> Details(int requestId)
     {
         var handler = new GetRequestDetailsHandler(_db);
 
-        var request = await handler.Handle(new GetRequestDetailsQuery(id));
+        var request = await handler.Handle(new GetRequestDetailsQuery(requestId));
 
         if (request is null)
             return NotFound();

@@ -40,19 +40,21 @@
         
 </div>
 
+<hr />
+
 <h4>Actions</h4>
 
 @if (Model.Status == RequestStatus.Draft)
 {
     <form asp-action="Submit" method="post" class="d-inline">
         @Html.AntiForgeryToken()
-        <input type="hidden" name="id" value="@Model.Id" />
+        <input type="hidden" name="requestId" value="@Model.Id" />
         <button class="btn btn-success">Submit Request</button>
     </form>
 
     <form asp-action="Cancel" method="post" class="d-inline">
         @Html.AntiForgeryToken()
-        <input type="hidden" name="id" value="@Model.Id" />
+        <input type="hidden" name="requestId" value="@Model.Id" />
         <button class="btn btn-danger">Cancel</button>
     </form>
 }
@@ -62,7 +64,7 @@
 {
     <form asp-action="StartReview" method="post" class="d-inline">
         @Html.AntiForgeryToken()
-        <input type="hidden" name="id" value="@Model.Id" />
+        <input type="hidden" name="requestId" value="@Model.Id" />
         <button class="btn btn-primary">Start Review</button>
     </form>
 }
@@ -70,11 +72,30 @@
 @if (Model.Status == RequestStatus.InReview
     && Model.AssignedApproverUserId == User.FindFirstValue(ClaimTypes.NameIdentifier))
 {
-    <form asp-action="Approve" method="post" class="d-inline">
+    <form asp-action="Approve" method="post" class="d-inline me-2">
         @Html.AntiForgeryToken()
-        <input type="hidden" name="id" value="@Model.Id" />
+        <input type="hidden" name="requestId" value="@Model.Id" />
         <button class="btn btn-success">Approve</button>
     </form>
+
+    <form asp-action="Reject" method="post" class="mt-3">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="requestId" value="@Model.Id" />
+
+        <div class="mb-2">
+            <label for="reason" class="form-label"><strong>Rejection Reason</strong></label>
+            <textarea name="reason" id="reason" class="form-control" rows="3" required></textarea>
+        </div>
+        <button type="submit" class="btn btn-danger">Reject</button>
+    </form>
+
+
+}
+@if (Model.Status == RequestStatus.Approved || Model.Status == RequestStatus.Rejected || Model.Status == RequestStatus.Cancelled)
+{
+    <p class="text-muted">
+        No Actions.
+    </p>
 }
 
 <hr />
