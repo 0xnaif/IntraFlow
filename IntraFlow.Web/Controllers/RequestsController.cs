@@ -1,4 +1,5 @@
 ﻿using IntraFlow.Application.Abstractions;
+using IntraFlow.Application.Requests.Commands.ApproveRequest;
 using IntraFlow.Application.Requests.Commands.CancelRequest;
 using IntraFlow.Application.Requests.Commands.CreateRequest;
 using IntraFlow.Application.Requests.Commands.StartReview;
@@ -121,6 +122,18 @@ public sealed class RequestsController : Controller
     {
         var handler = new StartReviewHandler(_db, _currentUser);
         await handler.Handle(new StartReviewCommand(id));
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Policy = "CanApprove")]
+    public async Task<IActionResult> Approve(int id)
+    {
+        var handler = new ApproveRequestHandler(_db, _currentUser, _emailSender);
+
+        await handler.Handle(new ApproveRequestCommand(id));
 
         return RedirectToAction(nameof(Details), new { id });
     }

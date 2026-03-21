@@ -37,7 +37,7 @@
         </p>
 
     </div>
-
+        
 </div>
 
 <h4>Actions</h4>
@@ -45,11 +45,13 @@
 @if (Model.Status == RequestStatus.Draft)
 {
     <form asp-action="Submit" method="post" class="d-inline">
+        @Html.AntiForgeryToken()
         <input type="hidden" name="id" value="@Model.Id" />
         <button class="btn btn-success">Submit Request</button>
     </form>
 
     <form asp-action="Cancel" method="post" class="d-inline">
+        @Html.AntiForgeryToken()
         <input type="hidden" name="id" value="@Model.Id" />
         <button class="btn btn-danger">Cancel</button>
     </form>
@@ -59,8 +61,19 @@
     && Model.AssignedApproverUserId == User.FindFirstValue(ClaimTypes.NameIdentifier))
 {
     <form asp-action="StartReview" method="post" class="d-inline">
+        @Html.AntiForgeryToken()
         <input type="hidden" name="id" value="@Model.Id" />
         <button class="btn btn-primary">Start Review</button>
+    </form>
+}
+
+@if (Model.Status == RequestStatus.InReview
+    && Model.AssignedApproverUserId == User.FindFirstValue(ClaimTypes.NameIdentifier))
+{
+    <form asp-action="Approve" method="post" class="d-inline">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+        <button class="btn btn-success">Approve</button>
     </form>
 }
 
