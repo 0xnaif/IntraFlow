@@ -161,14 +161,21 @@ public sealed class RequestsController : Controller
     [HttpGet]
     public async Task<IActionResult> Details(int requestId)
     {
-        var handler = new GetRequestDetailsHandler(_db);
+        var handler = new GetRequestDetailsHandler(_db, _currentUser);
 
-        var request = await handler.Handle(new GetRequestDetailsQuery(requestId));
+        try
+        {
+            var request = await handler.Handle(new GetRequestDetailsQuery(requestId));
 
-        if (request is null)
-            return NotFound();
+            if (request is null)
+                return NotFound();
 
-        return View(request);
+            return View(request);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
 
     [Authorize(Policy = "CanApprove")]
