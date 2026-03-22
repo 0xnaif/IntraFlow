@@ -1,4 +1,5 @@
 ﻿using IntraFlow.Application.Abstractions;
+using IntraFlow.Application.Requests.Commands.AddComment;
 using IntraFlow.Application.Requests.Commands.ApproveRequest;
 using IntraFlow.Application.Requests.Commands.CancelRequest;
 using IntraFlow.Application.Requests.Commands.CreateRequest;
@@ -154,6 +155,24 @@ public sealed class RequestsController : Controller
 
         var handler = new RejectRequestHandler(_db, _currentUser, _emailSender);
         await handler.Handle(new RejectRequestCommand(requestId, reason));
+
+        return RedirectToAction(nameof(Details), new { requestId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddComment(int requestId, string comment)
+    {
+        if (string.IsNullOrWhiteSpace(comment))
+        {
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+
+        comment = comment.Trim();
+
+        var handler = new AddRequestCommentHandler(_db, _currentUser);
+
+        await handler.Handle(new AddRequestCommentCommand(requestId, comment));
 
         return RedirectToAction(nameof(Details), new { requestId });
     }
