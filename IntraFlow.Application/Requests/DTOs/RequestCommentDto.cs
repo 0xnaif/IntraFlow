@@ -2,6 +2,8 @@
 
 public sealed record RequestCommentDto(
     int Id,
-    string AuthorUserId,
+    int RequestId,
     string Body,
+    string AuthorUserId,
+    string AuthorFullName,
     DateTime CreatedAt);

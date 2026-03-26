@@ -7,6 +7,7 @@ using IntraFlow.Application.Requests.Commands.RejectRequest;
 using IntraFlow.Application.Requests.Commands.StartReview;
 using IntraFlow.Application.Requests.Commands.SubmitRequest;
 using IntraFlow.Application.Requests.Queries.ApproverRequests;
+using IntraFlow.Application.Requests.Queries.GetComments;
 using IntraFlow.Application.Requests.Queries.GetRequestDetails;
 using IntraFlow.Application.Requests.Queries.MyRequests;
 using IntraFlow.Web.Models.Requests;
@@ -22,15 +23,18 @@ public sealed class RequestsController : Controller
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IEmailSender _emailSender;
+    private readonly IUserLookupService _userLookupService;
 
     public RequestsController(
         IAppDbContext db,
         ICurrentUserService currentUser,
-        IEmailSender emailSender)
+        IEmailSender emailSender,
+        IUserLookupService userLookupService)
     {
         _db = db;
         _currentUser = currentUser;
         _emailSender = emailSender;
+        _userLookupService = userLookupService;
     }
 
     [HttpGet]
@@ -180,16 +184,25 @@ public sealed class RequestsController : Controller
     [HttpGet]
     public async Task<IActionResult> Details(int requestId)
     {
-        var handler = new GetRequestDetailsHandler(_db, _currentUser);
+        var requesthandler = new GetRequestDetailsHandler(_db, _currentUser);
 
         try
         {
-            var request = await handler.Handle(new GetRequestDetailsQuery(requestId));
+            var request = await requesthandler.Handle(new GetRequestDetailsQuery(requestId));
 
             if (request is null)
                 return NotFound();
 
-            return View(request);
+            var commentsHandler = new GetRequestCommentsHandler(_db, _userLookupService);
+            var comments = await commentsHandler.Handle(new GetRequestCommentsQuery(requestId));
+
+            var vm = new RequestDetailsPageViewModel
+            {
+                Request = request,
+                Comments = comments
+            };
+
+            return View(vm);
         }
         catch (UnauthorizedAccessException)
         {
