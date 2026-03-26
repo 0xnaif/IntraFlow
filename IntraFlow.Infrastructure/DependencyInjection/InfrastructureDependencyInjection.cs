@@ -7,6 +7,7 @@ using IntraFlow.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using IntraFlow.Application.Abstractions;
 using IntraFlow.Infrastructure.Email;
+using IntraFlow.Infrastructure.Identity;
 
 namespace IntraFlow.Infrastructure.DependencyInjection
 {
@@ -23,6 +24,8 @@ namespace IntraFlow.Infrastructure.DependencyInjection
 
             services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
             services.AddScoped<IEmailSender, DevEmailSender>();
+
+            services.AddScoped<IUserLookupService, UserLookupService>();
 
             return services;
         }
