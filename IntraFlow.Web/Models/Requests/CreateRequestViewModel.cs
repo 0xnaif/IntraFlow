@@ -23,6 +23,8 @@ public sealed class CreateRequestViewModel
 
     [Required]
     public string SubmitAction { get; set; } = "Draft";
+
+    public List<IFormFile> Attachments { get; set; } = new();
 }
 
 public sealed class RequestTypeOption

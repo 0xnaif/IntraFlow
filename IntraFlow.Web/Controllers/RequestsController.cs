@@ -1,4 +1,5 @@
 ﻿using IntraFlow.Application.Abstractions;
+using IntraFlow.Application.Requests.Commands.AddAttachment;
 using IntraFlow.Application.Requests.Commands.AddComment;
 using IntraFlow.Application.Requests.Commands.ApproveRequest;
 using IntraFlow.Application.Requests.Commands.CancelRequest;
@@ -66,7 +67,7 @@ public sealed class RequestsController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(CreateRequestViewModel vm)
+    public async Task<IActionResult> Create(CreateRequestViewModel vm, CancellationToken ct)
     {
         if (!ModelState.IsValid)
         {
@@ -90,11 +91,22 @@ public sealed class RequestsController : Controller
             RequestTypeId: vm.RequestTypeId
         ));
 
+        await SaveAttachmentsAsync(requestId, vm.Attachments, ct);
+
         if (vm.SubmitAction == "Submit")
         {
             var submitHandler = new SubmitRequestHandler(_db, _currentUser, _emailSender);
             await submitHandler.Handle(new SubmitRequestCommand(requestId));
         }
+
+        return RedirectToAction(nameof(Details), new { requestId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UploadAttachments(int requestId, List<IFormFile> attachments, CancellationToken ct)
+    {
+        await SaveAttachmentsAsync(requestId, attachments, ct);
 
         return RedirectToAction(nameof(Details), new { requestId });
     }
@@ -219,5 +231,27 @@ public sealed class RequestsController : Controller
         var requests = await handler.Handle();
 
         return View(requests);
+    }
+
+    private async Task SaveAttachmentsAsync(int requestId, List<IFormFile>? attachments, CancellationToken ct = default)
+    {
+        if (attachments is null || attachments.Count == 0)
+            return;
+
+        var handler = new AddRequestAttachmentHandler(_db, _currentUser);
+
+        foreach (var attachment in attachments.Where(x => x is not null && x.Length > 0))
+        {
+            await using var stream = new MemoryStream();
+            await attachment.CopyToAsync(stream, ct);
+
+            await handler.Handle(new AddRequestAttachmentCommand(
+                RequestId: requestId,
+                FileName: attachment.FileName,
+                ContentType: attachment.ContentType ?? "application/octet-stream",
+                FileSizeBytes: (int)attachment.Length,
+                FileData: stream.ToArray()
+            ), ct);
+        }
     }
 }

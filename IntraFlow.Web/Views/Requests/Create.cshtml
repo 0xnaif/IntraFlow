@@ -6,7 +6,7 @@
 
 <h2>Create Request</h2>
 
-<form asp-action="Create" method="post">
+<form asp-action="Create" method="post" enctype="multipart/form-data">
     <div class="mb-3">
         <label asp-for="Title" class="form-label"></label>
         <input asp-for="Title" class="form-control" />
@@ -38,6 +38,12 @@
                 </select>
         <span asp-validation-for="RequestTypeId" class="text-danger"></span>
     </div>
+
+    <div class="mb-3">
+        <label asp-for="Attachments" class="form-label">Attachments</label>
+        <input asp-for="Attachments"  type="file" multiple class="form-control"/>
+    </div>
+
     <div class="d-flex gap-2">
         <button type="submit"
                 name="SubmitAction"

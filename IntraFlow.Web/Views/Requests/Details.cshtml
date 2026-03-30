@@ -11,6 +11,9 @@
         (IsAuthorized) && (
         request.Status == RequestStatus.Submitted ||
         request.Status == RequestStatus.InReview);
+    var canUploadAttachment = request.CreatedByUserId == currentUserId &&
+        (request.Status == RequestStatus.Submitted ||
+        request.Status == RequestStatus.InReview);
 }
 
 <h2>Request Details</h2>
@@ -109,6 +112,20 @@
 
 <h4>Attachments</h4>
 
+@if (canUploadAttachment)
+{
+    <form asp-action="UploadAttachments" method="post" enctype="multipart/form-data" class="mt-3">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="requestId" value="@request.Id" />
+
+        <div class="mb-3">
+            <label for="attachments" class="form-label">Upload Attachments</label>
+            <input id="attachments" name="attachments" type="file" class="form-control" multiple />
+        </div>
+
+        <button type="submit" class="btn btn-secondary">Upload Attachments</button>
+    </form>
+}
 <p class="text-muted">
     No attachments yet.
 </p>
