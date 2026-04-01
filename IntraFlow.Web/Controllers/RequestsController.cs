@@ -8,6 +8,7 @@ using IntraFlow.Application.Requests.Commands.RejectRequest;
 using IntraFlow.Application.Requests.Commands.StartReview;
 using IntraFlow.Application.Requests.Commands.SubmitRequest;
 using IntraFlow.Application.Requests.Queries.ApproverRequests;
+using IntraFlow.Application.Requests.Queries.GetAttachments;
 using IntraFlow.Application.Requests.Queries.GetComments;
 using IntraFlow.Application.Requests.Queries.GetRequestDetails;
 using IntraFlow.Application.Requests.Queries.MyRequests;
@@ -208,10 +209,14 @@ public sealed class RequestsController : Controller
             var commentsHandler = new GetRequestCommentsHandler(_db, _userLookupService);
             var comments = await commentsHandler.Handle(new GetRequestCommentsQuery(requestId));
 
+            var attachmentsHandler = new GetRequestAttachmentsHandler(_db, _currentUser);
+            var attachments = await attachmentsHandler.Handle(new GetRequestAttachmentsQuery(requestId));
+
             var vm = new RequestDetailsPageViewModel
             {
                 Request = request,
-                Comments = comments
+                Comments = comments,
+                Attachments = attachments
             };
 
             return View(vm);
@@ -231,6 +236,30 @@ public sealed class RequestsController : Controller
         var requests = await handler.Handle();
 
         return View(requests);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ViewAttachment(int AttachmentId)
+    {
+        var handler = new GetAttachmentFileHandler(_db, _currentUser);
+        
+        try
+        {
+            var result = await handler.Handle(new GetAttachmentFileQuery(AttachmentId));
+
+            return File(
+                result.Data, 
+                result.ContentType,
+                enableRangeProcessing: true);
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
 
     private async Task SaveAttachmentsAsync(int requestId, List<IFormFile>? attachments, CancellationToken ct = default)

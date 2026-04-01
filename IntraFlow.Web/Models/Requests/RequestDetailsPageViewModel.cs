@@ -6,4 +6,5 @@ public sealed class RequestDetailsPageViewModel
 {
     public RequestDetailsDto Request { get; init; } = null!;
     public List<RequestCommentDto> Comments { get; init; } = new();
+    public List<RequestAttachmentDto> Attachments { get; init; } = new();
 }
