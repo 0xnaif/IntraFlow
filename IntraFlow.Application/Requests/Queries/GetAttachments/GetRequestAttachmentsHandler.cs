@@ -32,7 +32,8 @@ public sealed class GetRequestAttachmentsHandler
             .Select(x => new RequestAttachmentDto(
                 x.Id,
                 x.FileName,
-                x.FileSizeBytes
+                x.FileSizeBytes,
+                x.UploadedAt
                 ))
             .ToListAsync(ct);
         

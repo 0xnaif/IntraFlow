@@ -4,6 +4,7 @@ using IntraFlow.Application.Requests.Commands.AddComment;
 using IntraFlow.Application.Requests.Commands.ApproveRequest;
 using IntraFlow.Application.Requests.Commands.CancelRequest;
 using IntraFlow.Application.Requests.Commands.CreateRequest;
+using IntraFlow.Application.Requests.Commands.DeleteAttachment;
 using IntraFlow.Application.Requests.Commands.RejectRequest;
 using IntraFlow.Application.Requests.Commands.StartReview;
 using IntraFlow.Application.Requests.Commands.SubmitRequest;
@@ -107,9 +108,37 @@ public sealed class RequestsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UploadAttachments(int requestId, List<IFormFile> attachments, CancellationToken ct)
     {
-        await SaveAttachmentsAsync(requestId, attachments, ct);
+        try
+        {
+            await SaveAttachmentsAsync(requestId, attachments, ct);
 
-        return RedirectToAction(nameof(Details), new { requestId });
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (Exception)
+        {
+            return Forbid();
+        }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteAttachment(int attachmentId, int requestId, CancellationToken ct = default)
+    {
+        var handler = new DeleteAttachmentHandler(_db, _currentUser);
+
+        try
+        {
+            await handler.Handle(new DeleteAttachmentCommand(attachmentId), ct);
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
 
     [HttpPost]
@@ -239,13 +268,13 @@ public sealed class RequestsController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> ViewAttachment(int AttachmentId)
+    public async Task<IActionResult> ViewAttachment(int attachmentId)
     {
         var handler = new GetAttachmentFileHandler(_db, _currentUser);
         
         try
         {
-            var result = await handler.Handle(new GetAttachmentFileQuery(AttachmentId));
+            var result = await handler.Handle(new GetAttachmentFileQuery(attachmentId));
 
             return File(
                 result.Data, 

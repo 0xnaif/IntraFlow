@@ -34,11 +34,23 @@ public sealed class AddRequestAttachmentHandler
         if (request.CreatedByUserId != _currentUser.UserId)
             throw new UnauthorizedAccessException("Not allowed to upload attachments.");
 
+        const int maxFileSizeBytes = 5 * 1024 * 1024;
+        const string allowedContentType = "application/pdf";
+
         if (string.IsNullOrWhiteSpace(cmd.FileName))
             throw new ArgumentException("File name is required.");
 
         if (cmd.FileSizeBytes <= 0 || cmd.FileData.Length == 0)
             throw new ArgumentException("Attachment cannot be empty.");
+
+        if (cmd.FileSizeBytes > maxFileSizeBytes)
+            throw new InvalidOperationException("Attachment exceeds the maximum size of 5 MB.");
+
+        if (!string.Equals(cmd.ContentType, allowedContentType, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Only PDF attachments are allowed.");
+
+
+
 
         var attachment = new RequestAttachment(
             requestId: cmd.RequestId,

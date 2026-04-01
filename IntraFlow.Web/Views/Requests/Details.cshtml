@@ -16,6 +16,9 @@
         (request.Status == RequestStatus.Draft ||
         request.Status == RequestStatus.Submitted ||
         request.Status == RequestStatus.InReview);
+
+    var canDeleteAttachment = request.CreatedByUserId == currentUserId &&
+        request.Status == RequestStatus.Draft;
 }
 
 <h2>Request Details</h2>
@@ -142,14 +145,30 @@
                         <small class="text-muted ms-2">
                             (@(file.FileSizeBytes / 1024) KB)
                         </small>
+                        <small class="text-muted ms-2">
+                            Uploaded @file.UploadedAt.ToLocalTime().ToString("g")
+                        </small>
                     </div>
 
-                    <a asp-action="ViewAttachment"
-                        asp-route-AttachmentId="@file.Id"
-                        target="_blank"
-                        class="btn btn-sm btn-outline-primary">
-                        View
-                    </a>
+                    <div class="d-flex gap-2">
+                        <a asp-action="ViewAttachment"
+                            asp-route-attachmentId="@file.Id"
+                            target="_blank"
+                            class="btn btn-sm btn-outline-primary">
+                            View
+                        </a>
+                        @if (canDeleteAttachment)
+                        {
+                            <form asp-action="DeleteAttachment" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="attachmentId" value="@file.Id" />
+                                <input type="hidden" name="requestId" value="@request.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    Delete
+                                </button>
+                            </form>
+                        }
+                    </div>
                 </li>
             }
         </ul>

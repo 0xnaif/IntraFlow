@@ -3,4 +3,5 @@
 public sealed record RequestAttachmentDto(
     int Id,
     string FileName,
-    int FileSizeBytes);
+    int FileSizeBytes,
+    DateTime UploadedAt);
