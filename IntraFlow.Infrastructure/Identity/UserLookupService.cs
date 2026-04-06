@@ -29,4 +29,23 @@ public sealed class UserLookupService : IUserLookupService
             .Where(u => ids.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => u.FullName, ct);
     }
+
+    public async Task<string> RequireEmailByUserIdAsync(string userId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new InvalidOperationException("User id is required to resolve email.");
+
+        var result = await _db.Users
+            .Where(u => u.Id == userId)
+            .Select(u => new { u.Email })
+            .FirstOrDefaultAsync(ct);
+
+        if (result is null)
+            throw new InvalidOperationException($"User '{userId}' was not found.");
+
+        if (string.IsNullOrWhiteSpace(result.Email))
+            throw new InvalidOperationException($"User '{userId}' does not have a valid email.");
+
+        return result.Email;
+    }
 }

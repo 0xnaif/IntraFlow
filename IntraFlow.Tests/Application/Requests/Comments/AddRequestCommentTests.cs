@@ -22,9 +22,14 @@ public class AddRequestCommentTests
         await using var db = DbFactory.Create();
 
         var creator = new FakeCurrentUserService { UserId = "creator" };
+        var userLookup = new FakeUserLookupService();
         var approver = "approver";
 
+        userLookup.SetUser(approver, "Approver One", "approver1@test.com");
+        
+
         db.RequestTypes.Add(new RequestType("Leave", "Test", approver));
+
         await db.SaveChangesAsync();
 
         var requestTypeId = await db.RequestTypes.Select(x => x.Id).FirstAsync();
@@ -37,7 +42,7 @@ public class AddRequestCommentTests
             RequestTypeId: requestTypeId
         ));
 
-        var submitHandler = new SubmitRequestHandler(db, creator, new FakeEmailSender());
+        var submitHandler = new SubmitRequestHandler(db, creator, new FakeEmailSender(), userLookup);
         await submitHandler.Handle(new(requestId));
 
         var commentHandler = new AddRequestCommentHandler(db, creator);
@@ -55,6 +60,9 @@ public class AddRequestCommentTests
         var creator = new FakeCurrentUserService { UserId = "creator" };
         var email = new FakeEmailSender();
         var approverUser = new FakeCurrentUserService { UserId = "approver", Roles = { "Approver" } };
+        var userLookup = new FakeUserLookupService();
+        userLookup.SetUser("approver", "Approver One", "approver1@test.com");
+
 
         db.RequestTypes.Add(new RequestType("Leave", "Test", "approver"));
         await db.SaveChangesAsync();
@@ -69,10 +77,10 @@ public class AddRequestCommentTests
             RequestTypeId: requestTypeId
         ));
 
-        await new SubmitRequestHandler(db, creator, email)
+        await new SubmitRequestHandler(db, creator, email, userLookup)
             .Handle(new(requestId));
 
-        await new StartReviewHandler(db, approverUser)
+        await new StartReviewHandler(db, approverUser, email, userLookup)
             .Handle(new(requestId));
 
         await new ApproveRequestHandler(db, approverUser, email)
@@ -91,6 +99,8 @@ public class AddRequestCommentTests
 
         var creator = new FakeCurrentUserService { UserId = "creator" };
         var attacker = new FakeCurrentUserService { UserId = "attacker" };
+        var userLookup = new FakeUserLookupService();
+        userLookup.SetUser("approver", "Approver One", "approver1@test.com");
 
         db.RequestTypes.Add(new RequestType("Leave", "Test", "approver"));
         await db.SaveChangesAsync();
@@ -105,7 +115,7 @@ public class AddRequestCommentTests
             RequestTypeId: requestTypeId
         ));
 
-        await new SubmitRequestHandler(db, creator, new FakeEmailSender())
+        await new SubmitRequestHandler(db, creator, new FakeEmailSender(), userLookup)
             .Handle(new(requestId));
 
         var commentHandler = new AddRequestCommentHandler(db, attacker);

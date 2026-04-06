@@ -97,7 +97,7 @@ public sealed class RequestsController : Controller
 
         if (vm.SubmitAction == "Submit")
         {
-            var submitHandler = new SubmitRequestHandler(_db, _currentUser, _emailSender);
+            var submitHandler = new SubmitRequestHandler(_db, _currentUser, _emailSender, _userLookupService);
             await submitHandler.Handle(new SubmitRequestCommand(requestId));
         }
 
@@ -146,7 +146,7 @@ public sealed class RequestsController : Controller
     [Authorize]
     public async Task<IActionResult> Submit(int requestId)
     {
-        var handler = new SubmitRequestHandler(_db, _currentUser, _emailSender);
+        var handler = new SubmitRequestHandler(_db, _currentUser, _emailSender, _userLookupService);
         await handler.Handle(new SubmitRequestCommand(requestId));
 
         return RedirectToAction(nameof(Details), new { requestId });
@@ -168,7 +168,7 @@ public sealed class RequestsController : Controller
     [Authorize(Policy = "CanApprove")]
     public async Task<IActionResult> StartReview(int requestId)
     {
-        var handler = new StartReviewHandler(_db, _currentUser);
+        var handler = new StartReviewHandler(_db, _currentUser, _emailSender, _userLookupService);
         await handler.Handle(new StartReviewCommand(requestId));
 
         return RedirectToAction(nameof(Details), new { requestId });

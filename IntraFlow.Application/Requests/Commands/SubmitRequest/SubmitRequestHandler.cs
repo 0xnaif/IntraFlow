@@ -12,11 +12,13 @@ public sealed class SubmitRequestHandler
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IEmailSender _email;
+    private readonly IUserLookupService _userLookupService;
 
-    public SubmitRequestHandler(IAppDbContext db, ICurrentUserService currentUser, IEmailSender email)
+    public SubmitRequestHandler(IAppDbContext db, ICurrentUserService currentUser, IEmailSender email, IUserLookupService userLookupService)
     {
         _db = db;
         _currentUser = currentUser;
+        _userLookupService = userLookupService;
         _email = email;
     }
 
@@ -37,7 +39,7 @@ public sealed class SubmitRequestHandler
 
         var newStatus = request.Status.ToString();
 
-        
+
         _db.AuditLogs.Add(AuditHelper.Create(
             entityType: "Request",
             entityId: request.Id.ToString(),
@@ -49,15 +51,18 @@ public sealed class SubmitRequestHandler
 
         var subject = $"Request #{request.Id} submitted";
         var body = $"Request '{request.Title}' has been submitted.";
+        var approverEmail = string.Empty;
 
         try
         {
-            await _email.SendAsync("admin@test.com", subject, body, ct);
-            _db.NotificationLogs.Add(NotificationLog.Sent(request.Id, "RequestSubmitted", "admin@test.com", subject));
+            approverEmail = await _userLookupService.RequireEmailByUserIdAsync(request.AssignedApproverUserId!, ct);
+
+            await _email.SendAsync(approverEmail, subject, body, ct);
+            _db.NotificationLogs.Add(NotificationLog.Sent(request.Id, "RequestSubmitted", approverEmail, subject));
         }
         catch (Exception ex)
         {
-            _db.NotificationLogs.Add(NotificationLog.Failed(request.Id, "RequestSubmitted", "admin@test.com", subject, ex.Message));
+            _db.NotificationLogs.Add(NotificationLog.Failed(request.Id, "RequestSubmitted", approverEmail, subject, ex.Message));
         }
 
         await _db.SaveChangesAsync(ct);
