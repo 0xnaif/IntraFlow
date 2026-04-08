@@ -62,7 +62,7 @@ public sealed class SubmitRequestHandler
         }
         catch (Exception ex)
         {
-            _db.NotificationLogs.Add(NotificationLog.Failed(request.Id, "RequestSubmitted", approverEmail, subject, ex.Message));
+            _db.NotificationLogs.Add(NotificationLog.Failed(request.Id, "RequestSubmitted", string.IsNullOrWhiteSpace(approverEmail) ? "N/A" : approverEmail, subject, ex.Message));
         }
 
         await _db.SaveChangesAsync(ct);

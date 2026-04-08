@@ -179,7 +179,7 @@ public sealed class RequestsController : Controller
     [Authorize(Policy = "CanApprove")]
     public async Task<IActionResult> Approve(int requestId)
     {
-        var handler = new ApproveRequestHandler(_db, _currentUser, _emailSender);
+        var handler = new ApproveRequestHandler(_db, _currentUser, _emailSender, _userLookupService);
 
         await handler.Handle(new ApproveRequestCommand(requestId));
 
@@ -199,7 +199,7 @@ public sealed class RequestsController : Controller
 
         reason = reason.Trim();
 
-        var handler = new RejectRequestHandler(_db, _currentUser, _emailSender);
+        var handler = new RejectRequestHandler(_db, _currentUser, _emailSender, _userLookupService);
         await handler.Handle(new RejectRequestCommand(requestId, reason));
 
         return RedirectToAction(nameof(Details), new { requestId });

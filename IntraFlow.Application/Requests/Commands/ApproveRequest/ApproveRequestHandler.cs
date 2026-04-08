@@ -12,12 +12,13 @@ public sealed class ApproveRequestHandler
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IEmailSender _email;
-
-    public ApproveRequestHandler(IAppDbContext db, ICurrentUserService currentUser, IEmailSender email)
+    private readonly IUserLookupService _userLookupService;
+    public ApproveRequestHandler(IAppDbContext db, ICurrentUserService currentUser, IEmailSender email, IUserLookupService userLookupService)
     {
         _db = db;
         _currentUser = currentUser;
         _email = email;
+        _userLookupService = userLookupService;
     }
 
     public async Task Handle(ApproveRequestCommand cmd, CancellationToken ct = default)
@@ -53,15 +54,17 @@ public sealed class ApproveRequestHandler
 
         var subject = $"Request #{request.Id} approved";
         var body = $"Request '{request.Title}' has been approved.";
+        var creatorEmail = string.Empty;
 
         try
         {
+            creatorEmail = await _userLookupService.RequireEmailByUserIdAsync(request.CreatedByUserId!, ct);
             await _email.SendAsync("admin@test.com", subject, body, ct);
-            _db.NotificationLogs.Add(NotificationLog.Sent(request.Id, "RequestApproved", "admin@test.com", subject));
+            _db.NotificationLogs.Add(NotificationLog.Sent(request.Id, "RequestApproved", creatorEmail, subject));
         }
         catch (Exception ex)
         {
-            _db.NotificationLogs.Add(NotificationLog.Failed(request.Id, "RequestApproved", "admin@test.com", subject, ex.Message));
+            _db.NotificationLogs.Add(NotificationLog.Failed(request.Id, "RequestApproved", string.IsNullOrWhiteSpace(creatorEmail) ? "N/A" : creatorEmail, subject, ex.Message));
         }
 
         await _db.SaveChangesAsync(ct);

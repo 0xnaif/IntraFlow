@@ -83,7 +83,7 @@ public class AddRequestCommentTests
         await new StartReviewHandler(db, approverUser, email, userLookup)
             .Handle(new(requestId));
 
-        await new ApproveRequestHandler(db, approverUser, email)
+        await new ApproveRequestHandler(db, approverUser, email, userLookup)
             .Handle(new(requestId));
 
         var commentHandler = new AddRequestCommentHandler(db, creator);

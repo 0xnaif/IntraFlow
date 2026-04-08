@@ -54,7 +54,7 @@ public sealed class StartReviewHandler
         }
         catch (Exception ex)
         {
-            _db.NotificationLogs.Add(NotificationLog.Failed(request.Id, "RequestReviewStarted", creatorEmail, subject, ex.Message));
+            _db.NotificationLogs.Add(NotificationLog.Failed(request.Id, "RequestReviewStarted", string.IsNullOrWhiteSpace(creatorEmail) ? "N/A" : creatorEmail, subject, ex.Message));
         }
 
         await _db.SaveChangesAsync(ct);

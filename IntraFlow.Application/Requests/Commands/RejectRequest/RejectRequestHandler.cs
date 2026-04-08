@@ -12,12 +12,13 @@ public sealed class RejectRequestHandler
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUser;
     private readonly IEmailSender _email;
-
-    public RejectRequestHandler(IAppDbContext db, ICurrentUserService currentUser, IEmailSender email)
+    private readonly IUserLookupService _userLookupService;
+    public RejectRequestHandler(IAppDbContext db, ICurrentUserService currentUser, IEmailSender email, IUserLookupService userLookupService)
     {
         _db = db;
         _currentUser = currentUser;
         _email = email;
+        _userLookupService = userLookupService;
     }
 
     public async Task Handle(RejectRequestCommand cmd, CancellationToken ct = default)
@@ -58,15 +59,17 @@ public sealed class RejectRequestHandler
 
         var subject = $"Request #{request.Id} rejected";
         var body = $"Request '{request.Title}' has been rejected.";
+        var creatorEmail = string.Empty;
 
         try
         {
+            creatorEmail = await _userLookupService.RequireEmailByUserIdAsync(request.CreatedByUserId!, ct);
             await _email.SendAsync("admin@test.com", subject, body, ct);
-            _db.NotificationLogs.Add(NotificationLog.Sent(request.Id, "RequestRejected", "admin@test.com", subject));
+            _db.NotificationLogs.Add(NotificationLog.Sent(request.Id, "RequestRejected", creatorEmail, subject));
         }
         catch (Exception ex)
         {
-            _db.NotificationLogs.Add(NotificationLog.Failed(request.Id, "RequestRejected", "admin@test.com", subject, ex.Message));
+            _db.NotificationLogs.Add(NotificationLog.Failed(request.Id, "RequestRejected", string.IsNullOrWhiteSpace(creatorEmail) ? "N/A" : creatorEmail, subject, ex.Message));
         }
 
         await _db.SaveChangesAsync(ct);
