@@ -28,16 +28,16 @@ public sealed class StartReviewHandler
         if (request.AssignedApproverUserId != _currentUser.UserId)
             throw new UnauthorizedAccessException("Only assigned approver can start review.");
 
-        var oldStatus = request.Status;
+        var oldStatus = request.Status.ToString();
 
         request.StartReview(request.AssignedApproverUserId);
 
-        var newStatus = request.Status;
+        var newStatus = request.Status.ToString();
 
         _db.AuditLogs.Add(AuditHelper.Create(
             entityType: "Request",
             entityId: request.Id.ToString(),
-            actionType: "InReview",
+            actionType: "ReviewStarted",
             performedByUserId: _currentUser.UserId,
             oldValues: new { Status = oldStatus },
             newValues: new { Status = newStatus }));

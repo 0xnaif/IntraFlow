@@ -1,4 +1,5 @@
 ﻿using IntraFlow.Application.Abstractions;
+using IntraFlow.Application.Audit.Queries.GetAuditEntriesForEntity;
 using IntraFlow.Application.Requests.Commands.AddAttachment;
 using IntraFlow.Application.Requests.Commands.AddComment;
 using IntraFlow.Application.Requests.Commands.ApproveRequest;
@@ -241,11 +242,15 @@ public sealed class RequestsController : Controller
             var attachmentsHandler = new GetRequestAttachmentsHandler(_db, _currentUser);
             var attachments = await attachmentsHandler.Handle(new GetRequestAttachmentsQuery(requestId));
 
+            var auditHandler = new GetAuditEntriesForEntityHandler(_db, _userLookupService);
+            var AuditEntries = await auditHandler.Handle(new GetAuditEntriesForEntityQuery("Request", requestId.ToString()));
+
             var vm = new RequestDetailsPageViewModel
             {
                 Request = request,
                 Comments = comments,
-                Attachments = attachments
+                Attachments = attachments,
+                AuditEntries = AuditEntries,
             };
 
             return View(vm);
@@ -311,5 +316,6 @@ public sealed class RequestsController : Controller
                 FileData: stream.ToArray()
             ), ct);
         }
+
     }
 }
