@@ -1,4 +1,5 @@
 ﻿using IntraFlow.Application.Abstractions;
+using IntraFlow.Application.Audit.DTOs;
 using IntraFlow.Application.Audit.Queries.GetAuditEntriesForEntity;
 using IntraFlow.Application.Requests.Commands.AddAttachment;
 using IntraFlow.Application.Requests.Commands.AddComment;
@@ -9,11 +10,13 @@ using IntraFlow.Application.Requests.Commands.DeleteAttachment;
 using IntraFlow.Application.Requests.Commands.RejectRequest;
 using IntraFlow.Application.Requests.Commands.StartReview;
 using IntraFlow.Application.Requests.Commands.SubmitRequest;
+using IntraFlow.Application.Requests.DTOs;
 using IntraFlow.Application.Requests.Queries.ApproverRequests;
 using IntraFlow.Application.Requests.Queries.GetAttachments;
 using IntraFlow.Application.Requests.Queries.GetComments;
 using IntraFlow.Application.Requests.Queries.GetRequestDetails;
 using IntraFlow.Application.Requests.Queries.MyRequests;
+using IntraFlow.Domain.Requests;
 using IntraFlow.Web.Models.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -28,6 +31,10 @@ public sealed class RequestsController : Controller
     private readonly ICurrentUserService _currentUser;
     private readonly IEmailSender _emailSender;
     private readonly IUserLookupService _userLookupService;
+
+    private const string SuccessMessageKey = "RequestDetails.Success";
+    private const string ErrorMessageKey = "RequestDetails.Error";
+
 
     public RequestsController(
         IAppDbContext db,
@@ -85,24 +92,46 @@ public sealed class RequestsController : Controller
             return View(vm);
         }
 
-        var handler = new CreateRequestHandler(_db, _currentUser);
-
-        var requestId = await handler.Handle(new CreateRequestCommand(
-            Title: vm.Title,
-            Description: vm.Description,
-            Priority: vm.Priority,
-            RequestTypeId: vm.RequestTypeId
-        ));
-
-        await SaveAttachmentsAsync(requestId, vm.Attachments, ct);
-
-        if (vm.SubmitAction == "Submit")
+        try
         {
-            var submitHandler = new SubmitRequestHandler(_db, _currentUser, _emailSender, _userLookupService);
-            await submitHandler.Handle(new SubmitRequestCommand(requestId));
-        }
+            var handler = new CreateRequestHandler(_db, _currentUser);
 
-        return RedirectToAction(nameof(Details), new { requestId });
+            var requestId = await handler.Handle(new CreateRequestCommand(
+                Title: vm.Title,
+                Description: vm.Description,
+                Priority: vm.Priority,
+                RequestTypeId: vm.RequestTypeId
+            ));
+
+            await SaveAttachmentsAsync(requestId, vm.Attachments, ct);
+
+            if (vm.SubmitAction == "Submit")
+            {
+                var submitHandler = new SubmitRequestHandler(_db, _currentUser, _emailSender, _userLookupService);
+                await submitHandler.Handle(new SubmitRequestCommand(requestId));
+
+                SetSuccessMessage("Request created and submitted successfully.");
+            }
+            else
+            {
+                SetSuccessMessage("Request created successfully.");
+            }
+
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (Exception ex) // Instead of two catches with ArgumentException, and InvalidOperationException 
+        {
+            vm.RequestTypes = await _db.RequestTypes
+                .Select(x => new RequestTypeOption
+                {
+                    Id = x.Id,
+                    Name = x.Name
+                })
+                .ToListAsync();
+
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return View(vm);
+        }
     }
 
     [HttpPost]
@@ -113,9 +142,20 @@ public sealed class RequestsController : Controller
         {
             await SaveAttachmentsAsync(requestId, attachments, ct);
 
+            SetSuccessMessage("Attachment(s) uploaded successfully.");
             return RedirectToAction(nameof(Details), new { requestId });
         }
-        catch (Exception)
+        catch (ArgumentException ex)
+        {
+            SetErrorMessage(ex.Message);
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (InvalidOperationException ex)
+        {
+            SetErrorMessage(ex.Message);
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (UnauthorizedAccessException)
         {
             return Forbid();
         }
@@ -130,11 +170,14 @@ public sealed class RequestsController : Controller
         try
         {
             await handler.Handle(new DeleteAttachmentCommand(attachmentId), ct);
+
+            SetSuccessMessage("Attachment deleted successfully.");
             return RedirectToAction(nameof(Details), new { requestId });
         }
-        catch (InvalidOperationException)
+        catch (InvalidOperationException ex)
         {
-            return NotFound();
+            SetErrorMessage(ex.Message);
+            return RedirectToAction(nameof(Details), new { requestId });
         }
         catch (UnauthorizedAccessException)
         {
@@ -148,9 +191,23 @@ public sealed class RequestsController : Controller
     public async Task<IActionResult> Submit(int requestId)
     {
         var handler = new SubmitRequestHandler(_db, _currentUser, _emailSender, _userLookupService);
-        await handler.Handle(new SubmitRequestCommand(requestId));
 
-        return RedirectToAction(nameof(Details), new { requestId });
+        try
+        {
+            await handler.Handle(new SubmitRequestCommand(requestId));
+
+            SetSuccessMessage("Request submitted successfully.");
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (InvalidOperationException ex)
+        {
+            SetErrorMessage(ex.Message);
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
 
     [HttpPost]
@@ -159,9 +216,23 @@ public sealed class RequestsController : Controller
     public async Task<IActionResult> Cancel(int requestId)
     {
         var handler = new CancelRequestHandler(_db, _currentUser);
-        await handler.Handle(new CancelRequestCommand(requestId));
 
-        return RedirectToAction(nameof(Details), new { requestId });
+        try
+        {
+            await handler.Handle(new CancelRequestCommand(requestId));
+
+            SetSuccessMessage("Request cancelled successfully.");
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (InvalidOperationException ex)
+        {
+            SetErrorMessage(ex.Message);
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
 
     [HttpPost]
@@ -170,9 +241,23 @@ public sealed class RequestsController : Controller
     public async Task<IActionResult> StartReview(int requestId)
     {
         var handler = new StartReviewHandler(_db, _currentUser, _emailSender, _userLookupService);
-        await handler.Handle(new StartReviewCommand(requestId));
 
-        return RedirectToAction(nameof(Details), new { requestId });
+        try
+        {
+            await handler.Handle(new StartReviewCommand(requestId));
+
+            SetSuccessMessage("Review started successfully.");
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (InvalidOperationException ex)
+        {
+            SetErrorMessage(ex.Message);
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
 
     [HttpPost]
@@ -182,9 +267,22 @@ public sealed class RequestsController : Controller
     {
         var handler = new ApproveRequestHandler(_db, _currentUser, _emailSender, _userLookupService);
 
-        await handler.Handle(new ApproveRequestCommand(requestId));
+        try
+        {
+            await handler.Handle(new ApproveRequestCommand(requestId));
 
-        return RedirectToAction(nameof(Details), new { requestId });
+            SetSuccessMessage("Request approved successfully.");
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (InvalidOperationException ex)
+        {
+            SetErrorMessage(ex.Message);
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
 
     [HttpPost]
@@ -194,16 +292,30 @@ public sealed class RequestsController : Controller
     {
         if (string.IsNullOrWhiteSpace(reason))
         {
-            ModelState.AddModelError("reason", "Rejection reason is required.");
+            SetErrorMessage("Rejection reason is required.");
             return RedirectToAction(nameof(Details), new { requestId });
         }
 
         reason = reason.Trim();
 
         var handler = new RejectRequestHandler(_db, _currentUser, _emailSender, _userLookupService);
-        await handler.Handle(new RejectRequestCommand(requestId, reason));
 
-        return RedirectToAction(nameof(Details), new { requestId });
+        try
+        {
+            await handler.Handle(new RejectRequestCommand(requestId, reason));
+
+            SetSuccessMessage("Request rejected successfully.");
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (InvalidOperationException ex)
+        {
+            SetErrorMessage(ex.Message);
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
 
     [HttpPost]
@@ -212,6 +324,7 @@ public sealed class RequestsController : Controller
     {
         if (string.IsNullOrWhiteSpace(comment))
         {
+            SetErrorMessage("Comment cannot be empty.");
             return RedirectToAction(nameof(Details), new { requestId });
         }
 
@@ -219,9 +332,27 @@ public sealed class RequestsController : Controller
 
         var handler = new AddRequestCommentHandler(_db, _currentUser);
 
-        await handler.Handle(new AddRequestCommentCommand(requestId, comment));
+        try
+        {
+            await handler.Handle(new AddRequestCommentCommand(requestId, comment));
 
-        return RedirectToAction(nameof(Details), new { requestId });
+            SetSuccessMessage("Comment added successfully.");
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (ArgumentException ex)
+        {
+            SetErrorMessage(ex.Message);
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (InvalidOperationException ex)
+        {
+            SetErrorMessage(ex.Message);
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
     }
 
     [HttpGet]
@@ -243,15 +374,13 @@ public sealed class RequestsController : Controller
             var attachments = await attachmentsHandler.Handle(new GetRequestAttachmentsQuery(requestId));
 
             var auditHandler = new GetAuditEntriesForEntityHandler(_db, _userLookupService);
-            var AuditEntries = await auditHandler.Handle(new GetAuditEntriesForEntityQuery("Request", requestId.ToString()));
+            var auditEntries = await auditHandler.Handle(new GetAuditEntriesForEntityQuery("Request", requestId.ToString()));
 
-            var vm = new RequestDetailsPageViewModel
-            {
-                Request = request,
-                Comments = comments,
-                Attachments = attachments,
-                AuditEntries = AuditEntries,
-            };
+            var vm = BuildRequestDetailsPageViewModel(
+                request,
+                comments,
+                attachments,
+                auditEntries);
 
             return View(vm);
         }
@@ -276,13 +405,13 @@ public sealed class RequestsController : Controller
     public async Task<IActionResult> ViewAttachment(int attachmentId)
     {
         var handler = new GetAttachmentFileHandler(_db, _currentUser);
-        
+
         try
         {
             var result = await handler.Handle(new GetAttachmentFileQuery(attachmentId));
 
             return File(
-                result.Data, 
+                result.Data,
                 result.ContentType,
                 enableRangeProcessing: true);
         }
@@ -316,6 +445,80 @@ public sealed class RequestsController : Controller
                 FileData: stream.ToArray()
             ), ct);
         }
+
+    }
+
+    private void SetSuccessMessage(string message)
+    {
+        TempData[SuccessMessageKey] = message;
+    }
+
+    private void SetErrorMessage(string message)
+    {
+        TempData[ErrorMessageKey] = message;
+    }
+
+    private RequestDetailsPageViewModel BuildRequestDetailsPageViewModel(
+        RequestDetailsDto request,
+        List<RequestCommentDto> comments,
+        List<RequestAttachmentDto> attachments,
+        List<AuditEntryDto> auditEntries)
+    {
+        var currentUserId = _currentUser.UserId;
+
+        var isCreator = request.CreatedByUserId == currentUserId;
+        var isAssignedApprover = request.AssignedApproverUserId == currentUserId;
+        var isAuthorizedViewer = isCreator || isAssignedApprover;
+
+        var isDraft = request.Status == RequestStatus.Draft;
+        var isSubmitted = request.Status == RequestStatus.Submitted;
+        var isInReview = request.Status == RequestStatus.InReview;
+        var isFinalized =
+            request.Status == RequestStatus.Approved ||
+            request.Status == RequestStatus.Rejected ||
+            request.Status == RequestStatus.Cancelled;
+
+        var canSubmit = isCreator && isDraft;
+        var canCancel = isCreator && isDraft;
+        var canStartReview = isAssignedApprover && isSubmitted;
+        var canApprove = isAssignedApprover && isInReview;
+        var canReject = isAssignedApprover && isInReview;
+
+        var canComment = isAuthorizedViewer && (isSubmitted || isInReview);
+        var canUploadAttachment = isCreator && (isDraft || isSubmitted || isInReview);
+        var canDeleteAttachment = isCreator && isDraft;
+
+        return new RequestDetailsPageViewModel
+        {
+            Request = request,
+            Comments = comments,
+            Attachments = attachments,
+            AuditEntries = auditEntries,
+
+            IsAuthorizedViewer = isAuthorizedViewer,
+            IsCreator = isCreator,
+            IsAssignedApprover = isAssignedApprover,
+
+            CanSubmit = canSubmit,
+            CanCancel = canCancel,
+            CanStartReview = canStartReview,
+            CanApprove = canApprove,
+            CanReject = canReject,
+
+            CanComment = canComment,
+            CanUploadAttachment = canUploadAttachment,
+            CanDeleteAttachment = canDeleteAttachment,
+
+            HasAnyAvailableAction =
+                canSubmit ||
+                canCancel ||
+                canStartReview ||
+                canApprove ||
+                canReject,
+
+            SuccessMessage = TempData[SuccessMessageKey]?.ToString(),
+            ErrorMessage = TempData[ErrorMessageKey]?.ToString()
+        };
 
     }
 }
