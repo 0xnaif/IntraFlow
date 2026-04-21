@@ -1,0 +1,31 @@
+﻿@model ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+}
+
+<div class="container mt-5">
+    <div class="text-center">
+        <h2 class="text-danger mb-3">Something went wrong</h2>
+
+        <p class="lead">
+            An unexpected error occurred while processing your request.
+        </p>
+
+        <p class="text-muted">
+            Please try again later or contact support if the issue persists.
+        </p>
+
+        @if (Model?.ShowRequestId == true)
+        {
+            <p class="text-muted">
+                <strong>Request ID:</strong> @Model.RequestId
+            </p>
+        }
+
+        <div class="mt-4">
+            <a asp-controller="Home" asp-action="Index" class="btn btn-primary">
+                Go to Home
+            </a>
+        </div>
+    </div>
+</div>

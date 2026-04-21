@@ -25,6 +25,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequireLowercase = false;
     options.Password.RequireDigit = false;
     options.Password.RequiredLength = 6;
+    // Remove Persistant signing
 })
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
@@ -42,7 +43,7 @@ builder.Services.AddAuthorization(options =>
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Identity/Account/Login";
-    options.AccessDeniedPath = "/Identity/Account/AccessDenied";
+    options.AccessDeniedPath = "/Home/AccessDenied";
 });
 
 

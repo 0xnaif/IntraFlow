@@ -103,6 +103,8 @@ public sealed class RequestsController : Controller
                 RequestTypeId: vm.RequestTypeId
             ));
 
+
+            
             await SaveAttachmentsAsync(requestId, vm.Attachments, ct);
 
             if (vm.SubmitAction == "Submit")
@@ -119,18 +121,19 @@ public sealed class RequestsController : Controller
 
             return RedirectToAction(nameof(Details), new { requestId });
         }
-        catch (Exception ex) // Instead of two catches with ArgumentException, and InvalidOperationException 
+        catch (ArgumentException ex)
         {
-            vm.RequestTypes = await _db.RequestTypes
-                .Select(x => new RequestTypeOption
-                {
-                    Id = x.Id,
-                    Name = x.Name
-                })
-                .ToListAsync();
-
             ModelState.AddModelError(string.Empty, ex.Message);
             return View(vm);
+        }
+        catch (InvalidOperationException ex)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            return View(vm);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return RedirectToAction("AccessDenied", "Home");
         }
     }
 
@@ -138,6 +141,11 @@ public sealed class RequestsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UploadAttachments(int requestId, List<IFormFile> attachments, CancellationToken ct)
     {
+        if (attachments is null || attachments.Count == 0)
+        {
+            SetErrorMessage("Please select at least one file to upload.");
+            return RedirectToAction(nameof(Details), new { requestId });
+        }
         try
         {
             await SaveAttachmentsAsync(requestId, attachments, ct);
@@ -157,7 +165,7 @@ public sealed class RequestsController : Controller
         }
         catch (UnauthorizedAccessException)
         {
-            return Forbid();
+            return RedirectToAction("AccessDenied", "Home");;
         }
     }
 
@@ -181,7 +189,7 @@ public sealed class RequestsController : Controller
         }
         catch (UnauthorizedAccessException)
         {
-            return Forbid();
+            return RedirectToAction("AccessDenied", "Home");;
         }
     }
 
@@ -206,7 +214,7 @@ public sealed class RequestsController : Controller
         }
         catch (UnauthorizedAccessException)
         {
-            return Forbid();
+            return RedirectToAction("AccessDenied", "Home");;
         }
     }
 
@@ -231,7 +239,7 @@ public sealed class RequestsController : Controller
         }
         catch (UnauthorizedAccessException)
         {
-            return Forbid();
+            return RedirectToAction("AccessDenied", "Home");;
         }
     }
 
@@ -256,7 +264,7 @@ public sealed class RequestsController : Controller
         }
         catch (UnauthorizedAccessException)
         {
-            return Forbid();
+            return RedirectToAction("AccessDenied", "Home");;
         }
     }
 
@@ -281,7 +289,7 @@ public sealed class RequestsController : Controller
         }
         catch (UnauthorizedAccessException)
         {
-            return Forbid();
+            return RedirectToAction("AccessDenied", "Home");;
         }
     }
 
@@ -314,7 +322,7 @@ public sealed class RequestsController : Controller
         }
         catch (UnauthorizedAccessException)
         {
-            return Forbid();
+            return RedirectToAction("AccessDenied", "Home");;
         }
     }
 
@@ -351,7 +359,7 @@ public sealed class RequestsController : Controller
         }
         catch (UnauthorizedAccessException)
         {
-            return Forbid();
+            return RedirectToAction("AccessDenied", "Home");;
         }
     }
 
@@ -386,7 +394,7 @@ public sealed class RequestsController : Controller
         }
         catch (UnauthorizedAccessException)
         {
-            return Forbid();
+            return RedirectToAction("AccessDenied", "Home");;
         }
     }
 
@@ -421,7 +429,7 @@ public sealed class RequestsController : Controller
         }
         catch (UnauthorizedAccessException)
         {
-            return Forbid();
+            return RedirectToAction("AccessDenied", "Home");;
         }
     }
 
