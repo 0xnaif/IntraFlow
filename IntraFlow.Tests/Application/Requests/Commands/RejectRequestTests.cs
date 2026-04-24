@@ -7,14 +7,19 @@ using IntraFlow.Domain.Requests;
 using IntraFlow.Tests.Application.Fakes;
 using IntraFlow.Tests.Application.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace IntraFlow.Tests.Application.Requests.Commands;
 
 public class RejectRequestTests
 {
+    private readonly ILogger<SubmitRequestHandler> _logger;
+
+    public RejectRequestTests()
+    {
+        _logger = NullLogger<SubmitRequestHandler>.Instance;
+    }
     [Fact]
     public async Task Reject_sends_email_to_creator_and_logs_notification()
     {
@@ -37,7 +42,7 @@ public class RejectRequestTests
         var requestId = await create.Handle(new CreateRequestCommand(
             "Title", "Desc", RequestPriority.Medium, requestTypeId));
 
-        var submit = new SubmitRequestHandler(db, creator, email, userLookup);
+        var submit = new SubmitRequestHandler(db, creator, email, userLookup, _logger);
         await submit.Handle(new SubmitRequestCommand(requestId));
 
         var start = new StartReviewHandler(db, approver, email, userLookup);

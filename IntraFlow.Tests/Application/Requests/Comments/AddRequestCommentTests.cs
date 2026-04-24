@@ -8,14 +8,19 @@ using IntraFlow.Domain.Requests;
 using IntraFlow.Tests.Application.Fakes;
 using IntraFlow.Tests.Application.Infrastructure;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace IntraFlow.Tests.Application.Requests.Comments;
 
 public class AddRequestCommentTests
 {
+    private readonly ILogger<SubmitRequestHandler> _logger;
+
+    public AddRequestCommentTests()
+    {
+        _logger = NullLogger<SubmitRequestHandler>.Instance;
+    }
     [Fact]
     public async Task Creator_can_add_comment()
     {
@@ -42,7 +47,7 @@ public class AddRequestCommentTests
             RequestTypeId: requestTypeId
         ));
 
-        var submitHandler = new SubmitRequestHandler(db, creator, new FakeEmailSender(), userLookup);
+        var submitHandler = new SubmitRequestHandler(db, creator, new FakeEmailSender(), userLookup, _logger);
         await submitHandler.Handle(new(requestId));
 
         var commentHandler = new AddRequestCommentHandler(db, creator);
@@ -77,7 +82,7 @@ public class AddRequestCommentTests
             RequestTypeId: requestTypeId
         ));
 
-        await new SubmitRequestHandler(db, creator, email, userLookup)
+        await new SubmitRequestHandler(db, creator, email, userLookup, _logger)
             .Handle(new(requestId));
 
         await new StartReviewHandler(db, approverUser, email, userLookup)
@@ -115,7 +120,7 @@ public class AddRequestCommentTests
             RequestTypeId: requestTypeId
         ));
 
-        await new SubmitRequestHandler(db, creator, new FakeEmailSender(), userLookup)
+        await new SubmitRequestHandler(db, creator, new FakeEmailSender(), userLookup, _logger)
             .Handle(new(requestId));
 
         var commentHandler = new AddRequestCommentHandler(db, attacker);

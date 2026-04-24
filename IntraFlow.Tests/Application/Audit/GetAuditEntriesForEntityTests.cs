@@ -6,14 +6,19 @@ using IntraFlow.Application.Requests.Commands.SubmitRequest;
 using IntraFlow.Domain.Requests;
 using IntraFlow.Tests.Application.Fakes;
 using IntraFlow.Tests.Application.Infrastructure;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace IntraFlow.Tests.Application.Audit;
 
 public class GetAuditEntriesForEntityTests
 {
+    private readonly ILogger<SubmitRequestHandler> _logger;
+
+    public GetAuditEntriesForEntityTests()
+    {
+        _logger = NullLogger<SubmitRequestHandler>.Instance;
+    }
     [Fact]
     public async Task Handle_returns_request_audit_entries_with_actor_names_and_readable_summaries()
     {
@@ -39,7 +44,7 @@ public class GetAuditEntriesForEntityTests
             Priority: RequestPriority.Medium,
             RequestTypeId: requestTypeId));
 
-        var submitHandler = new SubmitRequestHandler(db, creator, email, userLookup);
+        var submitHandler = new SubmitRequestHandler(db, creator, email, userLookup, _logger);
         await submitHandler.Handle(new SubmitRequestCommand(requestId));
 
         var startReviewHandler = new StartReviewHandler(db, approver, email, userLookup);

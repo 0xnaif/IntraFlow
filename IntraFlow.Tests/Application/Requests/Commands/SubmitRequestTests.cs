@@ -6,11 +6,20 @@ using IntraFlow.Domain.Requests;
 using IntraFlow.Tests.Application.Fakes;
 using IntraFlow.Tests.Application.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace IntraFlow.Tests.Application.Requests.Commands;
 
 public class SubmitRequestTests
 {
+    private readonly ILogger<SubmitRequestHandler> _logger;
+
+    public SubmitRequestTests()
+    {
+        _logger = NullLogger<SubmitRequestHandler>.Instance;
+    }
+
     [Fact]
     public async Task Submit_creates_notification_log()
     {
@@ -36,7 +45,7 @@ public class SubmitRequestTests
         ));
 
         
-        var submitHandler = new SubmitRequestHandler(db, currentUser, email, userLookup);
+        var submitHandler = new SubmitRequestHandler(db, currentUser, email, userLookup, _logger);
 
         
         await submitHandler.Handle(new SubmitRequestCommand(requestId));
@@ -82,7 +91,7 @@ public class SubmitRequestTests
             RequestTypeId: db.RequestTypes.Select(x => x.Id).First()
             ));
 
-        var submitHandler = new SubmitRequestHandler(db, currentUser, email, userLookup);
+        var submitHandler = new SubmitRequestHandler(db, currentUser, email, userLookup, _logger);
 
         await submitHandler.Handle(new SubmitRequestCommand(requestId));
 
@@ -131,7 +140,7 @@ public class SubmitRequestTests
             RequestTypeId: db.RequestTypes.Select(x => x.Id).First()
         ));
 
-        var submitHandler = new SubmitRequestHandler(db, currentUser, email, userLookup);
+        var submitHandler = new SubmitRequestHandler(db, currentUser, email, userLookup, _logger);
 
         await submitHandler.Handle(new SubmitRequestCommand(requestId));
 

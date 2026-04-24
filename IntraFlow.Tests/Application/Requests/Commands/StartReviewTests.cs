@@ -6,11 +6,19 @@ using IntraFlow.Domain.Requests;
 using IntraFlow.Tests.Application.Fakes;
 using IntraFlow.Tests.Application.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace IntraFlow.Tests.Application.Requests.Commands;
 
 public class StartReviewTests
 {
+    private readonly ILogger<SubmitRequestHandler> _logger;
+
+    public StartReviewTests()
+    {
+        _logger = NullLogger<SubmitRequestHandler>.Instance;
+    }
     [Fact]
     public async Task StartReview_sends_email_to_request_creator_and_creates_sent_notification_log()
     {
@@ -37,7 +45,7 @@ public class StartReviewTests
             RequestTypeId: requestTypeId
         ));
 
-        var submitHandler = new SubmitRequestHandler(db, creator, email, userLookup);
+        var submitHandler = new SubmitRequestHandler(db, creator, email, userLookup, _logger);
         await submitHandler.Handle(new SubmitRequestCommand(requestId));
 
         email.Sent.Clear();
