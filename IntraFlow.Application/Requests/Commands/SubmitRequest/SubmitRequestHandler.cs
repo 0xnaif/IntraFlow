@@ -3,6 +3,7 @@ using IntraFlow.Application.Common;
 using IntraFlow.Domain.Audit;
 using IntraFlow.Domain.Notifications;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 namespace IntraFlow.Application.Requests.Commands.SubmitRequest;
@@ -13,17 +14,20 @@ public sealed class SubmitRequestHandler
     private readonly ICurrentUserService _currentUser;
     private readonly IEmailSender _email;
     private readonly IUserLookupService _userLookupService;
-
-    public SubmitRequestHandler(IAppDbContext db, ICurrentUserService currentUser, IEmailSender email, IUserLookupService userLookupService)
+    private readonly ILogger<SubmitRequestHandler> _logger;
+    public SubmitRequestHandler(IAppDbContext db, ICurrentUserService currentUser, IEmailSender email, IUserLookupService userLookupService, ILogger<SubmitRequestHandler> logger)
     {
         _db = db;
         _currentUser = currentUser;
         _userLookupService = userLookupService;
         _email = email;
+        _logger = logger;
     }
 
     public async Task Handle(SubmitRequestCommand cmd, CancellationToken ct = default)
     {
+        _logger.LogInformation("Submitting request {RequestId} by user {UserId}", cmd.RequestId, _currentUser.UserId);
+
         var request = await _db.Requests.FirstOrDefaultAsync(x => x.Id == cmd.RequestId, ct)
             ?? throw new InvalidOperationException("Request not found.");
 
@@ -39,6 +43,7 @@ public sealed class SubmitRequestHandler
 
         var newStatus = request.Status.ToString();
 
+        _logger.LogInformation("Request {Id} submitted successfully. New status: {newStatus}", request.Id, newStatus);
 
         _db.AuditLogs.Add(AuditHelper.Create(
             entityType: "Request",

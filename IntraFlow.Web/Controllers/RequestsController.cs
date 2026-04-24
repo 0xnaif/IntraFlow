@@ -29,8 +29,24 @@ public sealed class RequestsController : Controller
 {
     private readonly IAppDbContext _db;
     private readonly ICurrentUserService _currentUser;
-    private readonly IEmailSender _emailSender;
-    private readonly IUserLookupService _userLookupService;
+    private readonly ILogger<RequestsController> _logger;
+
+    private readonly GetMyRequestsHandler _getMyRequestsHandler;
+    private readonly CreateRequestHandler _createRequestHandler;
+    private readonly SubmitRequestHandler _submitRequestHandler;
+    private readonly AddRequestAttachmentHandler _addAttachmentHandler;
+    private readonly DeleteAttachmentHandler _deleteAttachmentHandler;
+    private readonly CancelRequestHandler _cancelRequestHandler;
+    private readonly StartReviewHandler _startReviewHandler;
+    private readonly ApproveRequestHandler _approveRequestHandler;
+    private readonly RejectRequestHandler _rejectRequestHandler;
+    private readonly AddRequestCommentHandler _addCommentHandler;
+    private readonly GetRequestDetailsHandler _getRequestDetailsHandler;
+    private readonly GetRequestCommentsHandler _getRequestCommentsHandler;
+    private readonly GetRequestAttachmentsHandler _getRequestAttachmentsHandler;
+    private readonly GetAuditEntriesForEntityHandler _getAuditEntriesHandler;
+    private readonly GetRequestsForApproverHandler _getRequestsForApproverHandler;
+    private readonly GetAttachmentFileHandler _getAttachmentFileHandler;
 
     private const string SuccessMessageKey = "RequestDetails.Success";
     private const string ErrorMessageKey = "RequestDetails.Error";
@@ -39,21 +55,49 @@ public sealed class RequestsController : Controller
     public RequestsController(
         IAppDbContext db,
         ICurrentUserService currentUser,
-        IEmailSender emailSender,
-        IUserLookupService userLookupService)
+        ILogger<RequestsController> logger,
+        GetMyRequestsHandler getMyRequestsHandler,
+        CreateRequestHandler createRequestHandler,
+        SubmitRequestHandler submitRequestHandler,
+        AddRequestAttachmentHandler addAttachmentHandler,
+        DeleteAttachmentHandler deleteAttachmentHandler,
+        CancelRequestHandler cancelRequestHandler,
+        StartReviewHandler startReviewHandler,
+        ApproveRequestHandler approveRequestHandler,
+        RejectRequestHandler rejectRequestHandler,
+        AddRequestCommentHandler addCommentHandler,
+        GetRequestDetailsHandler getRequestDetailsHandler,
+        GetRequestCommentsHandler getRequestCommentsHandler,
+        GetRequestAttachmentsHandler getRequestAttachmentsHandler,
+        GetAuditEntriesForEntityHandler getAuditEntriesHandler,
+        GetRequestsForApproverHandler getRequestsForApproverHandler,
+        GetAttachmentFileHandler getAttachmentFileHandler)
     {
         _db = db;
         _currentUser = currentUser;
-        _emailSender = emailSender;
-        _userLookupService = userLookupService;
+        _logger = logger;
+        _getMyRequestsHandler = getMyRequestsHandler;
+        _createRequestHandler = createRequestHandler;
+        _submitRequestHandler = submitRequestHandler;
+        _addAttachmentHandler = addAttachmentHandler;
+        _deleteAttachmentHandler = deleteAttachmentHandler;
+        _cancelRequestHandler = cancelRequestHandler;
+        _startReviewHandler = startReviewHandler;
+        _approveRequestHandler = approveRequestHandler;
+        _rejectRequestHandler = rejectRequestHandler;
+        _addCommentHandler = addCommentHandler;
+        _getRequestDetailsHandler = getRequestDetailsHandler;
+        _getRequestCommentsHandler = getRequestCommentsHandler;
+        _getRequestAttachmentsHandler = getRequestAttachmentsHandler;
+        _getAuditEntriesHandler = getAuditEntriesHandler;
+        _getRequestsForApproverHandler = getRequestsForApproverHandler;
+        _getAttachmentFileHandler = getAttachmentFileHandler;
     }
 
     [HttpGet]
     public async Task<IActionResult> Index()
     {
-        var handler = new GetMyRequestsHandler(_db, _currentUser);
-
-        var requests = await handler.Handle();
+        var requests = await _getMyRequestsHandler.Handle();
 
         return View(requests);
     }
@@ -94,23 +138,18 @@ public sealed class RequestsController : Controller
 
         try
         {
-            var handler = new CreateRequestHandler(_db, _currentUser);
-
-            var requestId = await handler.Handle(new CreateRequestCommand(
+            var requestId = await _createRequestHandler.Handle(new CreateRequestCommand(
                 Title: vm.Title,
                 Description: vm.Description,
                 Priority: vm.Priority,
                 RequestTypeId: vm.RequestTypeId
             ));
 
-
-            
             await SaveAttachmentsAsync(requestId, vm.Attachments, ct);
 
             if (vm.SubmitAction == "Submit")
             {
-                var submitHandler = new SubmitRequestHandler(_db, _currentUser, _emailSender, _userLookupService);
-                await submitHandler.Handle(new SubmitRequestCommand(requestId));
+                await _submitRequestHandler.Handle(new SubmitRequestCommand(requestId));
 
                 SetSuccessMessage("Request created and submitted successfully.");
             }
@@ -173,11 +212,9 @@ public sealed class RequestsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteAttachment(int attachmentId, int requestId, CancellationToken ct = default)
     {
-        var handler = new DeleteAttachmentHandler(_db, _currentUser);
-
         try
         {
-            await handler.Handle(new DeleteAttachmentCommand(attachmentId), ct);
+            await _deleteAttachmentHandler.Handle(new DeleteAttachmentCommand(attachmentId), ct);
 
             SetSuccessMessage("Attachment deleted successfully.");
             return RedirectToAction(nameof(Details), new { requestId });
@@ -198,11 +235,9 @@ public sealed class RequestsController : Controller
     [Authorize]
     public async Task<IActionResult> Submit(int requestId)
     {
-        var handler = new SubmitRequestHandler(_db, _currentUser, _emailSender, _userLookupService);
-
         try
         {
-            await handler.Handle(new SubmitRequestCommand(requestId));
+            await _submitRequestHandler.Handle(new SubmitRequestCommand(requestId));
 
             SetSuccessMessage("Request submitted successfully.");
             return RedirectToAction(nameof(Details), new { requestId });
@@ -223,11 +258,9 @@ public sealed class RequestsController : Controller
     [Authorize]
     public async Task<IActionResult> Cancel(int requestId)
     {
-        var handler = new CancelRequestHandler(_db, _currentUser);
-
         try
         {
-            await handler.Handle(new CancelRequestCommand(requestId));
+            await _cancelRequestHandler.Handle(new CancelRequestCommand(requestId));
 
             SetSuccessMessage("Request cancelled successfully.");
             return RedirectToAction(nameof(Details), new { requestId });
@@ -248,11 +281,9 @@ public sealed class RequestsController : Controller
     [Authorize(Policy = "CanApprove")]
     public async Task<IActionResult> StartReview(int requestId)
     {
-        var handler = new StartReviewHandler(_db, _currentUser, _emailSender, _userLookupService);
-
         try
         {
-            await handler.Handle(new StartReviewCommand(requestId));
+            await _startReviewHandler.Handle(new StartReviewCommand(requestId));
 
             SetSuccessMessage("Review started successfully.");
             return RedirectToAction(nameof(Details), new { requestId });
@@ -273,11 +304,9 @@ public sealed class RequestsController : Controller
     [Authorize(Policy = "CanApprove")]
     public async Task<IActionResult> Approve(int requestId)
     {
-        var handler = new ApproveRequestHandler(_db, _currentUser, _emailSender, _userLookupService);
-
         try
         {
-            await handler.Handle(new ApproveRequestCommand(requestId));
+            await _approveRequestHandler.Handle(new ApproveRequestCommand(requestId));
 
             SetSuccessMessage("Request approved successfully.");
             return RedirectToAction(nameof(Details), new { requestId });
@@ -306,11 +335,9 @@ public sealed class RequestsController : Controller
 
         reason = reason.Trim();
 
-        var handler = new RejectRequestHandler(_db, _currentUser, _emailSender, _userLookupService);
-
         try
         {
-            await handler.Handle(new RejectRequestCommand(requestId, reason));
+            await _rejectRequestHandler.Handle(new RejectRequestCommand(requestId, reason));
 
             SetSuccessMessage("Request rejected successfully.");
             return RedirectToAction(nameof(Details), new { requestId });
@@ -338,11 +365,9 @@ public sealed class RequestsController : Controller
 
         comment = comment.Trim();
 
-        var handler = new AddRequestCommentHandler(_db, _currentUser);
-
         try
         {
-            await handler.Handle(new AddRequestCommentCommand(requestId, comment));
+            await _addCommentHandler.Handle(new AddRequestCommentCommand(requestId, comment));
 
             SetSuccessMessage("Comment added successfully.");
             return RedirectToAction(nameof(Details), new { requestId });
@@ -366,23 +391,16 @@ public sealed class RequestsController : Controller
     [HttpGet]
     public async Task<IActionResult> Details(int requestId)
     {
-        var requesthandler = new GetRequestDetailsHandler(_db, _currentUser);
-
         try
         {
-            var request = await requesthandler.Handle(new GetRequestDetailsQuery(requestId));
+            var request = await _getRequestDetailsHandler.Handle(new GetRequestDetailsQuery(requestId));
 
             if (request is null)
                 return NotFound();
 
-            var commentsHandler = new GetRequestCommentsHandler(_db, _userLookupService);
-            var comments = await commentsHandler.Handle(new GetRequestCommentsQuery(requestId));
-
-            var attachmentsHandler = new GetRequestAttachmentsHandler(_db, _currentUser);
-            var attachments = await attachmentsHandler.Handle(new GetRequestAttachmentsQuery(requestId));
-
-            var auditHandler = new GetAuditEntriesForEntityHandler(_db, _userLookupService);
-            var auditEntries = await auditHandler.Handle(new GetAuditEntriesForEntityQuery("Request", requestId.ToString()));
+            var comments = await _getRequestCommentsHandler.Handle(new GetRequestCommentsQuery(requestId));
+            var attachments = await _getRequestAttachmentsHandler.Handle(new GetRequestAttachmentsQuery(requestId));
+            var auditEntries = await _getAuditEntriesHandler.Handle(new GetAuditEntriesForEntityQuery("Request", requestId.ToString()));
 
             var vm = BuildRequestDetailsPageViewModel(
                 request,
@@ -396,15 +414,18 @@ public sealed class RequestsController : Controller
         {
             return RedirectToAction("AccessDenied", "Home");;
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load request details for RequestId {RequestId}", requestId);
+            throw;
+        }
     }
 
     [Authorize(Policy = "CanApprove")]
     [HttpGet]
     public async Task<IActionResult> Pending()
     {
-        var handler = new GetRequestsForApproverHandler(_db, _currentUser);
-
-        var requests = await handler.Handle();
+        var requests = await _getRequestsForApproverHandler.Handle();
 
         return View(requests);
     }
@@ -412,11 +433,9 @@ public sealed class RequestsController : Controller
     [HttpGet]
     public async Task<IActionResult> ViewAttachment(int attachmentId)
     {
-        var handler = new GetAttachmentFileHandler(_db, _currentUser);
-
         try
         {
-            var result = await handler.Handle(new GetAttachmentFileQuery(attachmentId));
+            var result = await _getAttachmentFileHandler.Handle(new GetAttachmentFileQuery(attachmentId));
 
             return File(
                 result.Data,
@@ -438,14 +457,12 @@ public sealed class RequestsController : Controller
         if (attachments is null || attachments.Count == 0)
             return;
 
-        var handler = new AddRequestAttachmentHandler(_db, _currentUser);
-
         foreach (var attachment in attachments.Where(x => x is not null && x.Length > 0))
         {
             await using var stream = new MemoryStream();
             await attachment.CopyToAsync(stream, ct);
 
-            await handler.Handle(new AddRequestAttachmentCommand(
+            await _addAttachmentHandler.Handle(new AddRequestAttachmentCommand(
                 RequestId: requestId,
                 FileName: attachment.FileName,
                 ContentType: attachment.ContentType ?? "application/octet-stream",

@@ -3,6 +3,7 @@ using IntraFlow.Application.DependencyInjection;
 using IntraFlow.Infrastructure.DependencyInjection;
 using IntraFlow.Infrastructure.Identity;
 using IntraFlow.Infrastructure.Persistence;
+using IntraFlow.Web.Middleware;
 using IntraFlow.Web.Seed;
 using IntraFlow.Web.Services;
 using Microsoft.AspNetCore.Identity;
@@ -65,6 +66,8 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
+
+app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();

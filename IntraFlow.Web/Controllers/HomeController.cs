@@ -6,20 +6,22 @@ namespace IntraFlow.Web.Controllers
 {
     public class HomeController : Controller
     {
-        public IActionResult Index()
-        {
-            return View();
-        }
+        private readonly ILogger<HomeController> _logger;
 
-        public IActionResult Privacy()
+        public HomeController(ILogger<HomeController> logger)
         {
-            return View();
+            _logger = logger;
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+
+            var requestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+
+            _logger.LogError("Error page triggered. RequestId: {RequestId}", requestId);
+
+            return View(new ErrorViewModel { RequestId = requestId });
         }
 
         [HttpGet]

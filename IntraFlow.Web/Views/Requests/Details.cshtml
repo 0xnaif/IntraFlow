@@ -1,10 +1,12 @@
 ﻿@model IntraFlow.Web.Models.Requests.RequestDetailsPageViewModel
 @using IntraFlow.Domain.Requests
 @using System.Text.Json
+@using System.Security.Claims
 
 @{
     ViewData["Title"] = "Request Details";
     var request = Model.Request;
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 }
 
 <h2 class="mb-3">Request Details</h2>
@@ -260,8 +262,15 @@
                 <div class="card mb-3">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <strong>@comment.AuthorFullName</strong>
-
+                            @if (!string.IsNullOrEmpty(currentUserId) && currentUserId == comment.AuthorUserId)
+                                {
+                                    <strong>You</strong>
+                                }
+                                else
+                                {
+                                    <strong>@comment.AuthorFullName</strong>
+                                }
+                            
                             <small class="text-muted">
                                 @comment.CreatedAt.ToLocalTime().ToString("g")
                             </small>

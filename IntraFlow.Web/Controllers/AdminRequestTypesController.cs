@@ -1,5 +1,4 @@
-﻿using IntraFlow.Application.Abstractions;
-using IntraFlow.Application.Common.Constants;
+﻿using IntraFlow.Application.Common.Constants;
 using IntraFlow.Application.RequestTypes.Commands.CreateRequestType;
 using IntraFlow.Application.RequestTypes.Queries;
 using IntraFlow.Infrastructure.Identity;
@@ -13,20 +12,24 @@ namespace IntraFlow.Web.Controllers;
 [Authorize(Policy = "IsAdmin")]
 public class AdminRequestTypesController : Controller
 {
-    private readonly IAppDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly GetRequestTypesHandler _getRequestTypesHandler;
+    private readonly CreateRequestTypeHandler _createRequestTypeHandler;
 
-    public AdminRequestTypesController(IAppDbContext db, UserManager<ApplicationUser> userManager)
+    public AdminRequestTypesController(
+        UserManager<ApplicationUser> userManager,
+        GetRequestTypesHandler getRequestTypesHandler,
+        CreateRequestTypeHandler createRequestTypeHandler)
     {
-        _db = db;
         _userManager = userManager;
+        _getRequestTypesHandler = getRequestTypesHandler;
+        _createRequestTypeHandler = createRequestTypeHandler;
     }
 
     [HttpGet]
     public async Task<IActionResult> Index(CancellationToken ct)
     {
-        var handler = new GetRequestTypesHandler(_db);
-        var items = await handler.Handle(new GetRequestTypesQuery(), ct);
+        var items = await _getRequestTypesHandler.Handle(new GetRequestTypesQuery(), ct);
 
         return View(items);
     }
@@ -53,8 +56,7 @@ public class AdminRequestTypesController : Controller
             return View(vm);
         }
 
-        var handler = new CreateRequestTypeHandler(_db);
-        await handler.Handle(new CreateRequestTypeCommand(
+        await _createRequestTypeHandler.Handle(new CreateRequestTypeCommand(
             Name: vm.Name,
             Description: vm.Description,
             DefaultApproverUserId: vm.DefaultApproverUserId), ct);
